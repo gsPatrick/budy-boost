@@ -1,0 +1,123 @@
+/* Wrapper Geral */
+.footerWrapper {
+  background-color: #f8f9fa; /* Cinza claro */
+  color: #333;
+}
+
+/* Seção Newsletter */
+.newsletterSection {
+  padding: 5rem 2rem;
+  text-align: center;
+  border-bottom: 1px solid #e7e7e7;
+}
+
+.newsletterTitle {
+  font-size: 2.5rem;
+  color: #1A234B;
+  margin-bottom: 1rem;
+}
+
+.newsletterSubtitle {
+  font-size: 1.1rem;
+  color: #555;
+  margin-bottom: 2rem;
+}
+
+.newsletterForm {
+  position: relative;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.newsletterInput {
+  width: 100%;
+  padding: 1rem 3.5rem 1rem 1.5rem;
+  border: 1px solid #ccc;
+  border-radius: 50px;
+  font-size: 1rem;
+}
+
+.newsletterButton {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #333;
+}
+
+/* Rodapé Principal */
+.mainFooter {
+  padding: 5rem 2rem 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.footerGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 3rem;
+  margin-bottom: 4rem;
+}
+
+.footerColumn .columnTitle {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+}
+
+.footerColumn .logo {
+  font-size: 1.8rem;
+  font-weight: bold;
+}
+
+.footerColumn p {
+  margin-bottom: 0.5rem;
+  color: #555;
+}
+
+.footerColumn ul {
+  list-style: none;
+  padding: 0;
+}
+
+.footerColumn li {
+  margin-bottom: 0.8rem;
+}
+
+.footerLink {
+  text-decoration: none;
+  color: #555;
+  transition: color 0.2s;
+  display: block; /* Para links de contato */
+  margin-top: 1rem;
+}
+.footerColumn ul .footerLink {
+  display: inline; /* Para links da lista */
+  margin-top: 0;
+}
+
+
+.footerLink:hover {
+  color: #1A234B;
+}
+
+/* Rodapé Inferior */
+.footerBottom {
+  padding-top: 2rem;
+  border-top: 1px solid #e7e7e7;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.socialIcons {
+  display: flex;
+  gap: 1.5rem;
+}
+.socialIcons a {
+  color: #333;
+}

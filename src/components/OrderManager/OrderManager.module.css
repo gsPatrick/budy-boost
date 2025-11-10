@@ -1,0 +1,87 @@
+.managerContainer {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1A234B;
+  margin-bottom: 2rem;
+}
+
+.tableWrapper {
+  overflow-x: auto; /* Garante que a tabela seja rolável em telas pequenas */
+}
+
+.orderTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.orderTable th, .orderTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.orderTable th {
+  font-size: 0.9rem;
+  color: #555;
+  text-transform: uppercase;
+}
+
+/* Badges de Status */
+.statusBadge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.pendente { background-color: #FEF3C7; color: #92400E; }
+.enviado { background-color: #DBEAFE; color: #1E40AF; }
+.entregue { background-color: #D1FAE5; color: #065F46; }
+.cancelado { background-color: #FEE2E2; color: #991B1B; }
+
+/* Ações */
+.actionsCell {
+  position: relative;
+}
+.actionButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+}
+.actionButton:hover {
+  background-color: #f3f4f6;
+}
+.actionMenu {
+  position: absolute;
+  right: 50px;
+  top: 0;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  z-index: 10;
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+}
+.actionMenu button {
+  background: none;
+  border: none;
+  padding: 0.8rem 1rem;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.actionMenu button:hover {
+  background-color: #f3f4f6;
+}
+.cancelOption {
+  color: #DC2626;
+}

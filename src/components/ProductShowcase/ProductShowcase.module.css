@@ -1,0 +1,117 @@
+/* /components/ProductShowcase/ProductShowcase.module.css */
+
+.showcaseSection {
+  padding: 5rem 2rem;
+  background-color: #ffffff; /* Fundo branco */
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.sectionTitle {
+  text-align: center;
+  font-size: 2.5rem;
+  font-weight: 700; /* Adicionado para dar mais destaque */
+  color: #1A234B;
+  margin-bottom: 3rem;
+}
+
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 colunas */
+  gap: 2rem;
+}
+
+.productCard {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.productCard:hover {
+  transform: translateY(-5px);
+}
+
+.imageContainer {
+  position: relative;
+  background-color: #f8f9fa; /* Fundo cinza claro para a imagem */
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.saleTag {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background-color: #1A234B;
+  color: white;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  z-index: 2;
+}
+
+.productImage {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.infoContainer {
+  text-align: left;
+}
+
+.productName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+  min-height: 40px; /* Garante que os cards fiquem alinhados */
+}
+
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+
+.originalPrice {
+  text-decoration: line-through;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.currentPrice {
+  font-weight: 700;
+  color: #1A234B;
+  font-size: 1.1rem;
+}
+
+/* --- NOVO ESTILO PARA MENSAGENS DE FEEDBACK --- */
+.infoMessage {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #555;
+  padding: 4rem 0;
+  background-color: #f8f9fa;
+  border-radius: 15px;
+}
+
+/* Responsividade para telas menores */
+@media (max-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr); /* 2 colunas em tablets */
+  }
+}
+
+@media (max-width: 600px) {
+  .productGrid {
+    grid-template-columns: 1fr; /* 1 coluna em celulares */
+  }
+}

@@ -1,0 +1,14 @@
+.missionSection {
+padding: 5rem 2rem;
+background-color: #f8f9fa; /* Mesmo cinza claro das seções anteriores */
+}
+.container {
+max-width: 800px; /* Largura mais contida para o texto */
+margin: 0 auto;
+text-align: center;
+}
+.missionText {
+font-size: 1.3rem;
+line-height: 1.8;
+color: #444;
+}

@@ -1,0 +1,53 @@
+.benefitsSection {
+  padding: 5rem 2rem;
+  background-color: #f8f9fa; /* Fundo cinza bem claro, como na imagem */
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* Cria 3 colunas iguais */
+  gap: 3rem;
+}
+
+.benefitItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.iconWrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  color: #1A234B; /* Cor azul escuro */
+  border: 2px solid #dde2e9; /* Borda sutil */
+  border-radius: 50%;
+  width: 70px;
+  height: 70px;
+}
+
+.title {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1A234B;
+  margin-bottom: 0.8rem;
+}
+
+.description {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #555;
+  max-width: 300px; /* Evita que o texto fique muito largo */
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr; /* Transforma em 1 coluna em telas menores */
+    gap: 4rem;
+  }
+}

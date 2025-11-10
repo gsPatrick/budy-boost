@@ -1,0 +1,115 @@
+.picksSection {
+  padding: 5rem 2rem;
+  background-color: #f8f9fa; /* Fundo cinza claro */
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1A234B;
+  margin-bottom: 3.5rem;
+  text-transform: capitalize;
+}
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  justify-content: center;
+  gap: 2rem;
+  max-width: 700px; /* Limita a largura para 2 produtos */
+  margin: 0 auto;
+}
+.productCard {
+  background-color: white;
+  border-radius: 15px;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.productCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+}
+.imageContainer {
+  position: relative;
+  padding: 2rem;
+}
+.saveTag {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background-color: #dbeafe; /* Azul claro */
+  color: #1e40af; /* Azul mais escuro */
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.productImage {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+.infoContainer {
+  padding: 0 1.5rem 1.5rem;
+  text-align: left;
+}
+.productName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+  min-height: 40px;
+}
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+.originalPrice {
+  text-decoration: line-through;
+  color: #888;
+}
+.currentPrice {
+  font-weight: 700;
+  color: #1A234B;
+  font-size: 1.2rem;
+}
+
+/* Adicione estas classes ao final do seu arquivo OurPicks.module.css */
+
+.priceContainer {
+  display: flex;
+  align-items: center; /* Alinha o preço e o botão verticalmente */
+  justify-content: space-between; /* Empurra o preço para a esquerda e o botão para a direita */
+  gap: 0.7rem;
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #1A234B;
+  color: white;
+  border: none;
+  border-radius: 50%; /* Deixa o botão redondo */
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.addButton:hover {
+  background-color: #374151;
+  transform: scale(1.1);
+}
+
+.addButton svg {
+  width: 20px;
+  height: 20px;
+}

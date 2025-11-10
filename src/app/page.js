@@ -1,66 +1,38 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Hero from '../components/Hero/Hero';
+import FeaturedBrands from '../components/FeaturedBrands/FeaturedBrands'; // 1. Importe o novo componente
+import ProductShowcase from '../components/ProductShowcase/ProductShowcase'; // 1. Importe aqui
+import InfoSection from '../components/InfoSection/InfoSection'; // 1. Importe o componente
+import Benefits from '../components/Benefits/Benefits'; // 1. Importe o componente
+import GuaranteeSection from '../components/GuaranteeSection/GuaranteeSection'; // 1. Importe
+import BrandMission from '../components/BrandMission/BrandMission'; // 1. Importe
+import Testimonials from '../components/Testimonials/Testimonials'; // 2. Import
 
-export default function Home() {
+import './globals.css'; // Mantenha os estilos globais
+
+export const metadata = {
+  title: 'Buddy Boost',
+  description: 'Sua loja de e-commerce',
+};
+
+export default function RootLayout({ children }) {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.js file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
+    <html lang="pt-br">
+      <body>
+         <Hero />
+         <FeaturedBrands /> {/* 2. Adicione o componente aqui */}
+         <ProductShowcase /> {/* 2. Adicione aqui */}
+               <InfoSection /> {/* 2. Adicione a nova seção aqui */}
+                     <Benefits /> {/* 2. Adicione a nova seção aqui */}
+                     <GuaranteeSection /> {/* 2. Adicione aqui */}
+                      <BrandMission /> {/* 3. Adicione aqui */}
+      <Testimonials /> {/* 4. E aqui */}
+
+
+
+
+        <main>{children}</main>
+        {/* Você pode adicionar um Footer aqui depois */}
+      </body>
+    </html>
   );
 }

@@ -1,0 +1,204 @@
+.main {
+  background-color: #f8f9fa;
+  padding: 4rem 2rem 6rem;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.pageTitle {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #1A234B;
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+/* Barra de Filtros */
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.filters, .sort {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.filterButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+}
+
+.productCount {
+  color: #888;
+  font-size: 0.9rem;
+}
+
+/* Grade de Produtos */
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.productCard {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+}
+
+.productCard:hover {
+  transform: translateY(-5px);
+}
+
+.imageContainer {
+  position: relative;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.saleTag {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background-color: #1A234B;
+  color: white;
+  padding: 0.4rem 0.9rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.productImage {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.infoContainer {
+  text-align: left;
+}
+
+.productName {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 0.5rem;
+  min-height: 40px;
+}
+
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+
+.originalPrice {
+  text-decoration: line-through;
+  color: #888;
+}
+
+.currentPrice {
+  font-weight: 700;
+  color: #1A234B;
+  font-size: 1.2rem;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .filterBar {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+}
+/* Adicione estas novas classes ao final do seu arquivo page.module.css */
+
+.infoMessage {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #555;
+  padding: 4rem 0;
+  background-color: #ffffff;
+  border-radius: 15px;
+}
+
+.sort label {
+  margin-right: 0.5rem;
+}
+
+.sortSelect {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: white;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 4rem;
+}
+
+.pagination button {
+  background-color: #1A234B;
+  color: white;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.pagination button:hover:not(:disabled) {
+  background-color: #374151;
+}
+
+.pagination button:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.pagination span {
+  font-weight: 500;
+  color: #333;
+}

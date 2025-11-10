@@ -1,0 +1,43 @@
+.brandsSection {
+  padding: 4rem 2rem;
+  background-color: #f7f7f7; /* Um cinza bem claro para diferenciar da hero */
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 2rem;
+}
+
+.logoPlaceholder {
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  color: #1A234B; /* Azul escuro padrão */
+  opacity: 0.6; /* Deixa um pouco mais sutil, como na imagem */
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* Estilos específicos para cada placeholder se aproximar do original */
+.logoYahoo {
+  font-size: 2.2rem;
+  font-weight: 800;
+  font-style: italic;
+  text-transform: lowercase;
+}
+
+.logoAbc {
+  font-size: 1.8rem;
+  font-weight: 900;
+}
+
+.logoDogsToday {
+  font-family: 'Times New Roman', Times, serif; /* Fonte com serifa */
+  text-transform: none; /* Sem caixa alta */
+  font-size: 1.7rem;
+  font-weight: 500;
+}

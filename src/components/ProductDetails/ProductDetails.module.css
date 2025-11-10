@@ -1,0 +1,227 @@
+.detailsContainer { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 1.8rem; 
+}
+
+/* Header */
+.productName { 
+    font-size: 2.2rem; 
+    color: #1A234B; 
+    font-weight: 700; 
+    margin-bottom: 0.5rem; 
+}
+
+.productSubtitle {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 1.5rem;
+    max-width: 500px;
+}
+
+.headerMeta { 
+    display: flex; 
+    flex-wrap: wrap; 
+    align-items: center; 
+    gap: 1.5rem; 
+    margin-bottom: 1rem; 
+}
+
+.rating { 
+    display: flex; 
+    align-items: center; 
+    gap: 0.3rem; 
+    color: #f59e0b; 
+}
+
+.rating span { 
+    color: #555; 
+    margin-left: 0.5rem; 
+}
+
+.priceSection { 
+    display: flex; 
+    align-items: baseline; 
+    gap: 1rem; 
+}
+
+.currentPrice { 
+    font-size: 1.8rem; 
+    font-weight: 700; 
+    color: #1A234B; 
+}
+
+.originalPrice { 
+    text-decoration: line-through; 
+    color: #9ca3af; 
+}
+
+.stockStatus { 
+    color: #16a34a; 
+    display: flex; 
+    align-items: center; 
+    gap: 0.4rem; 
+    font-weight: 500; 
+}
+
+.outOfStock {
+    color: #DC2626;
+}
+
+/* Abas (Tabs) */
+.tabs { 
+    display: flex; 
+    background-color: #f3f4f6; 
+    border-radius: 10px; 
+    padding: 0.4rem; 
+}
+
+.tabs button { 
+    flex: 1; 
+    background: none; 
+    border: none; 
+    padding: 0.8rem; 
+    font-size: 1rem; 
+    cursor: pointer; 
+    border-radius: 8px; 
+    font-weight: 600; 
+    color: #555; 
+    transition: all 0.2s; 
+}
+
+.tabs .activeTab { 
+    background-color: white; 
+    color: #1A234B; 
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08); 
+}
+
+.tabContent { 
+    background-color: #f8f9fa; 
+    border-radius: 10px; 
+    padding: 1.5rem; 
+    margin-top: 1rem;
+    color: #333;
+    line-height: 1.7;
+}
+
+/* Ações e Confiança */
+.addToCartButton { 
+    width: 100%; 
+    padding: 1.2rem; 
+    font-size: 1.1rem; 
+    font-weight: 600; 
+    color: white; 
+    background-color: #1A234B; 
+    border: none; 
+    border-radius: 10px; 
+    cursor: pointer; 
+    transition: background-color 0.2s; 
+    margin-top: 1rem;
+}
+
+.addToCartButton:hover { 
+    background-color: #374151; 
+}
+
+.trustBox { 
+    display: flex; 
+    gap: 1rem; 
+    align-items: flex-start; 
+    background-color: #f0fdf4; 
+    color: #16a34a; 
+    padding: 1.5rem; 
+    border-radius: 10px; 
+}
+
+.trustBox h4 { 
+    font-weight: 700; 
+    color: #15803d; 
+}
+
+.trustBox p { 
+    font-size: 0.9rem; 
+    color: #166534; 
+}
+
+/* Acordeões */
+.accordionContainer {
+    display: flex;
+    flex-direction: column;
+    border-top: 1px solid #e5e7eb;
+    margin-top: 1rem;
+}
+  
+.accordionItemWrapper {
+    border-bottom: 1px solid #e5e7eb;
+}
+  
+.accordionItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 1.5rem 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+}
+  
+.accordionItem div {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #1A234B;
+}
+  
+.accordionChevron {
+    transition: transform 0.3s ease;
+}
+  
+.accordionChevron.open {
+    transform: rotate(180deg);
+}
+  
+.accordionContent {
+    padding: 0 1rem 1.5rem 3.5rem; /* Alinha com o texto do título */
+    color: #555;
+    line-height: 1.8;
+}
+  
+.infoTable {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+  
+.infoRow {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+.infoRow:last-child {
+    border-bottom: none;
+}
+  
+.infoLabel {
+    font-weight: 500;
+    color: #333;
+}
+  
+.infoValue {
+    font-weight: 600;
+    color: #1A234B;
+}
+  
+.infoSection h4 {
+    font-weight: 700;
+    color: #1A234B;
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+}
+.infoSection h4:first-child {
+    margin-top: 0;
+}

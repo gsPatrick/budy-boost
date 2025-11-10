@@ -1,0 +1,70 @@
+.endorsementSection {
+  padding: 4rem 2rem;
+  background-color: #f8f9fa;
+}
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  background-color: #eaf2e9; /* Verde menta claro */
+  border-radius: 20px;
+  padding: 4rem;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  align-items: center;
+  position: relative;
+}
+.imageContainer {
+  position: absolute;
+  bottom: 0;
+  left: 20px;
+  height: 105%; /* Para a imagem sair um pouco para baixo */
+}
+.vetImage {
+  height: 100%;
+  width: auto;
+  object-fit: contain;
+  object-position: bottom left;
+}
+.textContainer {
+  grid-column: 2 / 3; /* Ocupa a segunda coluna */
+}
+.title {
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+}
+.quote {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #333;
+  margin-bottom: 2rem;
+  font-style: italic;
+}
+.signature {
+  font-weight: 700;
+  color: #1A234B;
+}
+@media (max-width: 768px) {
+  .container {
+    grid-template-columns: 1fr;
+    padding: 2rem;
+    padding-top: 180px; /* Espaço para a imagem no topo */
+    text-align: center;
+  }
+  .imageContainer {
+    position: absolute;
+    top: -50px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: 220px;
+    width: 100%;
+  }
+  .vetImage {
+    height: 100%;
+    object-position: top center;
+  }
+  .textContainer {
+    grid-column: 1 / -1;
+  }
+}

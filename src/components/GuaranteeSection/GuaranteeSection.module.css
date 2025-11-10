@@ -1,0 +1,85 @@
+.guaranteeSection {
+  padding: 6rem 2rem;
+  background-color: #f8f9fa; /* Fundo cinza bem claro */
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 4rem;
+}
+
+/* Lado Esquerdo */
+.imageContainer {
+  flex: 1;
+}
+
+.guaranteeImage {
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
+  object-fit: cover;
+}
+
+/* Lado Direito */
+.textContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.preTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #555;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.title {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+}
+
+.description {
+  font-size: 1.1rem;
+  color: #444;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+  max-width: 500px; /* Limita a largura do texto */
+}
+
+.ctaButton {
+  background-color: #1A234B;
+  color: white;
+  padding: 0.9rem 2.2rem;
+  border-radius: 50px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+  margin-top: 1.5rem;
+}
+
+.ctaButton:hover {
+  transform: translateY(-3px);
+  background-color: #2c3a6e;
+}
+
+/* Responsividade */
+@media (max-width: 900px) {
+  .container {
+    /* Inverte a ordem em telas menores para a imagem vir primeiro */
+    flex-direction: column-reverse; 
+    gap: 2.5rem;
+  }
+  .textContainer {
+    align-items: center;
+    text-align: center;
+  }
+}

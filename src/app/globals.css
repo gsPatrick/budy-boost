@@ -1,6 +1,12 @@
+/* globals.css */
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Cor principal do texto da página Tipaw: rgb(9, 20, 55) */
+  --color-tipaw-text: #ffffff
+  /* Cor branca para o destaque do H1 */
+  --color-white: #FFFFFF;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,9 +23,15 @@ body {
 }
 
 body {
-  color: var(--foreground);
+  /* Aplica a fonte Assistant como padrão, herdada do RootLayout */
+  font-family: var(--font-assistant), sans-serif;
+  
+  /* Estilos do corpo do texto da página Tipaw */
+  font-size: 15px; /* Tamanho base do corpo */
+  font-weight: 400; /* Peso Regular */
+  color: var(--color-tipaw-text); /* Cor do texto Tipaw */
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -39,4 +51,48 @@ a {
   html {
     color-scheme: dark;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* ESTILOS DE TIPOGRAFIA DA PÁGINA TIPAW */
+/* ------------------------------------------------------------------ */
+
+/* Parágrafos */
+p {
+  font-size: 18px; /* Texto de parágrafo */
+  font-weight: 400;
+  color: var(--color-tipaw-text);
+}
+
+/* Título H1 (Base) */
+h1 {
+  font-size: 40px;
+  font-weight: 400;
+  color: var(--color-tipaw-text);
+}
+
+/* Título H1 (Destaque - Ex: "Healthy Dogs") */
+h1 strong {
+  font-size: 52px; /* Tamanho maior */
+  font-weight: 700; /* Negrito */
+  color: var(--color-white); /* Cor branca */
+}
+
+/* Título H2 (Ex: "Magical supplements") */
+h2 {
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--color-tipaw-text);
+}
+
+/* Título H3 (Não foi encontrado na análise, mas mantemos um padrão) */
+h3 {
+  font-size: 20px; /* Um pouco menor que H2 */
+  font-weight: 700; /* Negrito */
+  color: var(--color-tipaw-text);
+}
+
+/* Links de Navegação e Botões (Geralmente em negrito) */
+nav a, button {
+  font-weight: 700; /* Negrito */
 }

@@ -1,0 +1,83 @@
+.benefitsSection {
+  position: relative;
+  background-color: #FDEBCD; /* Cor de fundo pêssego/amarelo claro */
+  padding: 5rem 2rem 10rem; /* Adiciona padding extra na base para a curva */
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1A234B; /* Azul escuro */
+  margin-bottom: 4rem;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.benefitItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.benefitImage {
+  object-fit: contain;
+  height: 120px;
+}
+
+.benefitTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1A234B;
+}
+
+/* Estilo da Curva SVG */
+.wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  line-height: 0;
+}
+
+.wave svg {
+  position: relative;
+  display: block;
+  width: calc(100% + 1.3px);
+  height: 150px; /* Altura da curva */
+}
+
+.wave .shapeFill {
+  fill: #FFFFFF; /* A curva deve ter a cor da próxima seção (branco) */
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 colunas em tablets */
+    gap: 3rem;
+  }
+  .benefitsSection {
+    padding-bottom: 8rem;
+  }
+  .wave svg {
+    height: 100px;
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: 1fr; /* 1 coluna em celulares */
+  }
+}

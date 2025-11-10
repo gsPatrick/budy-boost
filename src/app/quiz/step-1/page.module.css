@@ -1,0 +1,28 @@
+.pageContainer {
+position: relative;
+width: 100%;
+display: flex;
+justify-content: center;
+align-items: flex-start;
+}
+.dogImage {
+position: absolute;
+bottom: 0;
+width: auto;
+z-index: 0;
+}
+.poodle {
+left: 15%;
+height: 350px;
+}
+.spitz {
+right: 15%;
+height: 300px;
+}
+@media (max-width: 1200px) {
+.poodle { left: 5%; }
+.spitz { right: 5%; }
+}
+@media (max-width: 900px) {
+.dogImage { display: none; } /* Esconde os cachorros em telas pequenas */
+}

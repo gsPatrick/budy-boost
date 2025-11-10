@@ -1,0 +1,109 @@
+.managerContainer {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.title {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #1A234B;
+}
+
+.addButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #1A234B;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  transition: background-color 0.2s;
+}
+.addButton:hover {
+  background-color: #374151;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+
+.productTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.productTable th, .productTable td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.productTable th {
+  font-size: 0.9rem;
+  color: #555;
+  text-transform: uppercase;
+}
+
+.productInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.productImage {
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: #f3f4f6;
+}
+
+.categoryBadge {
+  background-color: #e0eaff;
+  color: #3730a3;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.actionsCell {
+  display: flex;
+  gap: 1rem;
+}
+
+.actionButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background-color: #f8f9fa;
+  color: #333;
+  transition: background-color 0.2s;
+}
+.actionButton:hover {
+  background-color: #e5e7eb;
+}
+
+.deleteButton {
+  color: #DC2626;
+  border-color: #fca5a5;
+}
+.deleteButton:hover {
+  background-color: #fee2e2;
+}

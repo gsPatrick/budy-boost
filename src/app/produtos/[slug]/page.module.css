@@ -1,0 +1,35 @@
+.main {
+  background-color: #ffffff;
+}
+
+.productContainer {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  display: grid;
+  /* Cria duas colunas. A da direita é um pouco maior. */
+  grid-template-columns: 1fr 1.2fr; 
+  gap: 4rem;
+  /* Alinha os itens no topo, essencial para o sticky funcionar bem */
+  align-items: flex-start; 
+}
+
+.leftColumn {
+  position: sticky; /* A MÁGICA ACONTECE AQUI */
+  top: 120px; /* Distância do topo da página (ajuste conforme a altura do seu header) */
+  height: calc(100vh - 140px); /* Garante que não ultrapasse a tela */
+}
+
+.rightColumn {
+  /* Esta coluna rola normalmente com o fluxo da página */
+}
+
+@media (max-width: 900px) {
+  .productContainer {
+    grid-template-columns: 1fr; /* Vira uma coluna só em telas menores */
+  }
+  .leftColumn {
+    position: static; /* Desativa o efeito sticky */
+    height: auto;
+  }
+}

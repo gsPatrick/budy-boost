@@ -1,0 +1,137 @@
+.carouselSection {
+  padding: 6rem 2rem;
+  background-color: #ffffff;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+.title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #1A234B;
+  margin-bottom: 1rem;
+}
+.subtitle {
+  max-width: 800px;
+  margin: 0 auto 3rem auto;
+  font-size: 1.1rem;
+  line-height: 1.7;
+  color: #555;
+}
+
+.carouselWrapper {
+  position: relative;
+  padding: 0 40px;
+  margin-bottom: 3rem;
+}
+
+/* --- ESTILOS DO SLIDE ATUALIZADOS --- */
+.slide {
+  background-color: #f8eacb; /* NOVA COR APLICADA */
+  padding: 1.5rem;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  justify-content: flex-start;
+}
+.iconWrapper {
+  background-color: rgba(255, 255, 255, 0.7); /* Fundo branco semitransparente para o ícone */
+  border-radius: 50%;
+  padding: 1.2rem;
+  margin-bottom: 1.2rem;
+  display: inline-flex;
+}
+.slide h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1A234B; /* Cor escura para contraste com o fundo claro */
+  margin-bottom: 0.8rem;
+}
+.slide p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: #555; /* Cor escura para contraste com o fundo claro */
+}
+
+/* Botões de Navegação Customizados */
+.carouselWrapper :global(.swiper-button-prev-custom),
+.carouselWrapper :global(.swiper-button-next-custom) {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  color: #555;
+  transition: all 0.2s;
+}
+
+.carouselWrapper :global(.swiper-button-prev-custom):hover,
+.carouselWrapper :global(.swiper-button-next-custom):hover {
+  background-color: #f3f4f6;
+  color: #1A234B;
+}
+
+.carouselWrapper :global(.swiper-button-prev-custom) {
+  left: 0;
+}
+
+.carouselWrapper :global(.swiper-button-next-custom) {
+  right: 0;
+}
+
+.carouselWrapper :global(.swiper-button-disabled) {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Acordeão */
+.accordion {
+  max-width: 800px;
+  margin: 0 auto;
+  border-top: 1px solid #e5e7eb;
+}
+.accordionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1.5rem 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+}
+.accordionHeader div {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 600;
+  color: #1A234B;
+}
+.accordionIcon {
+  transition: transform 0.3s ease;
+}
+.accordionIcon.open {
+  transform: rotate(180deg);
+}
+.accordionContent {
+  padding: 0 1rem 1.5rem;
+  text-align: left;
+  line-height: 1.8;
+  color: #555;
+  border-bottom: 1px solid #e5e7eb;
+}
+.accordionContent p {
+  margin-bottom: 1rem;
+}

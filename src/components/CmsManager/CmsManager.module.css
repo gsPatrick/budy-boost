@@ -1,0 +1,22 @@
+.managerContainer { background-color: white; padding: 2rem; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+.loading { font-size: 1.5rem; text-align: center; padding: 4rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid #e5e7eb; padding-bottom: 1.5rem; }
+.title { font-size: 1.8rem; font-weight: 700; color: #1A234B; }
+.saveButton { display: inline-flex; align-items: center; gap: 0.5rem; background-color: #16a34a; color: white; padding: 0.8rem 1.5rem; border-radius: 8px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; }
+.saveButton:disabled { background-color: #9ca3af; }
+
+/* Abas */
+.tabContainer { display: flex; border-bottom: 2px solid #e5e7eb; margin-bottom: 2rem; }
+.tabContainer button { background: none; border: none; padding: 1rem 1.5rem; font-size: 1rem; font-weight: 600; color: #555; cursor: pointer; border-bottom: 3px solid transparent; transform: translateY(2px); }
+.activeTab { color: #1A234B; border-bottom-color: #1A234B; }
+
+/* Formulário */
+.tabContent { }
+.formSection { display: flex; flex-direction: column; gap: 1.5rem; }
+.formSection h3 { font-size: 1.3rem; color: #1A234B; padding-bottom: 0.8rem; border-bottom: 1px solid #e5e7eb; }
+.formGroup { display: flex; flex-direction: column; gap: 0.5rem; }
+.formGroup label { font-weight: 600; }
+.formGroup input, .formGroup textarea { width: 100%; padding: 0.8rem; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; }
+.formGroup textarea { min-height: 120px; resize: vertical; }
+.colorInput { height: 40px; padding: 0.2rem; }
+.separator { height: 1px; background-color: #e5e7eb; margin: 1.5rem 0; }
