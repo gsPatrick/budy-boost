@@ -26,7 +26,8 @@ async function getProductData(slug) {
   
   try {
     // Usamos a variável de ambiente específica do servidor.
-    const apiUrl = `${process.env.API_URL_SERVER}/produtos/${slug}`;
+    const apiUrl = `https://geral-shopifyapi.r954jc.easypanel.host/api/produtos/${slug}`;
+
     
     // Log para depuração no terminal do servidor Next.js
     console.log(`[Frontend] Buscando dados do produto em: ${apiUrl}`);
