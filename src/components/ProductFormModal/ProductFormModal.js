@@ -4,13 +4,14 @@ import { FiX, FiPlusCircle, FiTrash2, FiUpload } from 'react-icons/fi';
 import styles from './ProductFormModal.module.css';
 import ApiService from '../../services/api.service';
 
-// ESTRUTURA INICIAL DE DADOS - ATUALIZADA COM PREÇO E ESTOQUE NO NÍVEL PRINCIPAL
+const DRAFT_KEY = 'productFormDraft'; // Chave para o localStorage
+
 const initialFormData = {
   nome: '',
   subtitulo: '',
   finalidade: '',
-  preco: 0.00,      // CAMPO ADICIONADO
-  estoque: 0,       // CAMPO ADICIONADO
+  preco: 0.00,
+  estoque: 0,
   niveisDeGarantia: [{ componente: '', quantidade: '' }],
   umidadeMaxima: '',
   composicaoBasica: '',
@@ -38,47 +39,71 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
   const [imagePreviews, setImagePreviews] = useState([]);
   const [categories, setCategories] = useState([]);
 
+  // EFEITO PARA SALVAR O RASCUNHO AUTOMATICAMENTE
   useEffect(() => {
-    const fetchCategoriesAndSetupForm = async () => {
+    // Só salva o rascunho se o modal estiver aberto e for um NOVO produto
+    if (isOpen && !product) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(formData));
+    }
+  }, [formData, isOpen, product]); // Roda sempre que o formulário muda
+
+  // EFEITO PARA CARREGAR DADOS E VERIFICAR RASCUNHO
+  useEffect(() => {
+    const setupForm = async () => {
       if (isOpen) {
+        // Busca categorias
         try {
           const response = await ApiService.get('/categorias');
           setCategories(response.data);
         } catch (error) {
-          console.error("Não foi possível carregar as categorias para o formulário", error);
+          console.error("Não foi possível carregar as categorias", error);
         }
 
+        // Limpa imagens anteriores
+        setImageFiles([]);
+        setImagePreviews([]);
+
         if (product) {
+          // MODO EDIÇÃO: Carrega dados do produto e limpa qualquer rascunho antigo
+          localStorage.removeItem(DRAFT_KEY);
           setFormData({
-            ...initialFormData,
+            ...initialFormData, 
             ...product,
             categoriaId: product.categoriaId ? String(product.categoriaId) : '',
             informacoesAdicionais: {
-              ...initialFormData.informacoesAdicionais,
-              ...(product.informacoesAdicionais || {}),
-              apresentacao: {
-                ...initialFormData.informacoesAdicionais.apresentacao,
-                ...((product.informacoesAdicionais || {}).apresentacao || {})
-              }
+                ...initialFormData.informacoesAdicionais,
+                ...(product.informacoesAdicionais || {}),
+                apresentacao: {
+                    ...initialFormData.informacoesAdicionais.apresentacao,
+                    ...((product.informacoesAdicionais || {}).apresentacao || {})
+                }
             },
             informacoesFabricante: {
-              ...initialFormData.informacoesFabricante,
-              ...(product.informacoesFabricante || {})
+                ...initialFormData.informacoesFabricante,
+                ...(product.informacoesFabricante || {})
             },
             niveisDeGarantia: product.niveisDeGarantia && product.niveisDeGarantia.length > 0 ? product.niveisDeGarantia : initialFormData.niveisDeGarantia,
           });
-          setImageFiles([]);
-          setImagePreviews([]);
         } else {
-          setFormData(initialFormData);
-          setImageFiles([]);
-          setImagePreviews([]);
+          // MODO CRIAÇÃO: Verifica se existe um rascunho
+          const savedDraft = localStorage.getItem(DRAFT_KEY);
+          if (savedDraft) {
+            if (window.confirm("Encontramos um rascunho não salvo. Deseja restaurá-lo?")) {
+              setFormData(JSON.parse(savedDraft));
+            } else {
+              // Se o usuário não quer restaurar, limpa o rascunho e começa do zero
+              localStorage.removeItem(DRAFT_KEY);
+              setFormData(initialFormData);
+            }
+          } else {
+            setFormData(initialFormData);
+          }
         }
         setActiveTab('geral');
       }
     };
     
-    fetchCategoriesAndSetupForm();
+    setupForm();
   }, [product, isOpen]);
 
   if (!isOpen) return null;
@@ -86,18 +111,17 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const val = type === 'checkbox' ? checked : value;
-
     if (name.includes('.')) {
       const [outerKey, innerKey, thirdKey] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [outerKey]: {
-          ...prev[outerKey],
+      setFormData(prev => ({ 
+        ...prev, 
+        [outerKey]: { 
+          ...prev[outerKey], 
           ...(thirdKey 
-            ? { [innerKey]: { ...prev[outerKey][innerKey], [thirdKey]: val } }
+            ? { [innerKey]: { ...prev[outerKey][innerKey], [thirdKey]: val } } 
             : { [innerKey]: val }
-          )
-        }
+          ) 
+        } 
       }));
     } else {
       setFormData(prev => ({ ...prev, [name]: val }));
@@ -123,7 +147,6 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
   const handleImageChange = (e) => {
     const files = Array.from(e.target.files);
     setImageFiles(prev => [...prev, ...files]);
-
     const newPreviews = files.map(file => URL.createObjectURL(file));
     setImagePreviews(prev => [...prev, ...newPreviews]);
   };
@@ -155,48 +178,30 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
         </div>
 
         <form onSubmit={handleSubmit} className={styles.form}>
-          {/* --- ABA GERAL --- */}
           {activeTab === 'geral' && (
             <div className={styles.tabContent}>
               <div className={styles.formGroup}><label>Nome do Produto</label><input type="text" name="nome" value={formData.nome} onChange={handleChange} required /></div>
               <div className={styles.formGroup}><label>Subtítulo</label><input type="text" name="subtitulo" value={formData.subtitulo} onChange={handleChange} /></div>
-              
-              {/* CAMPOS DE PREÇO E ESTOQUE ADICIONADOS AQUI */}
               <div className={styles.formGrid}>
-                <div className={styles.formGroup}>
-                  <label>Preço (R$)</label>
-                  <input type="number" name="preco" value={formData.preco} onChange={handleChange} step="0.01" required />
-                </div>
-                <div className={styles.formGroup}>
-                  <label>Estoque</label>
-                  <input type="number" name="estoque" value={formData.estoque} onChange={handleChange} step="1" />
-                </div>
+                <div className={styles.formGroup}><label>Preço (R$)</label><input type="number" name="preco" value={formData.preco} onChange={handleChange} step="0.01" required /></div>
+                <div className={styles.formGroup}><label>Estoque</label><input type="number" name="estoque" value={formData.estoque} onChange={handleChange} step="1" /></div>
               </div>
-              
               <div className={styles.formGroup}>
                 <label>Categoria / Kit</label>
                 <select name="categoriaId" value={formData.categoriaId || ''} onChange={handleChange} required>
                   <option value="" disabled>Selecione uma categoria</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.nome}
-                    </option>
-                  ))}
+                  {categories.map(cat => (<option key={cat.id} value={cat.id}>{cat.nome}</option>))}
                 </select>
               </div>
-              
               <div className={styles.formGroup}><label>Finalidade</label><textarea name="finalidade" value={formData.finalidade} onChange={handleChange}></textarea></div>
               <div className={styles.formGroup}><label><input type="checkbox" name="ativo" checked={formData.ativo} onChange={handleChange} /> Ativo</label></div>
             </div>
           )}
-          
-          {/* --- ABA IMAGENS --- */}
           {activeTab === 'imagens' && (
             <div className={styles.tabContent}>
                 <h4>Upload de Novas Imagens</h4>
                 <div className={styles.uploadBox}>
-                    <FiUpload size={30} />
-                    <p>Arraste e solte ou clique para selecionar</p>
+                    <FiUpload size={30} /><p>Arraste e solte ou clique para selecionar</p>
                     <input type="file" multiple accept="image/*" onChange={handleImageChange} />
                 </div>
                 {imagePreviews.length > 0 && (
@@ -211,8 +216,6 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
                 )}
             </div>
           )}
-
-          {/* --- ABA COMPOSIÇÃO --- */}
           {activeTab === 'composicao' && (
             <div className={styles.tabContent}>
               <h4>Níveis de Garantia</h4>
@@ -228,8 +231,6 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
               <div className={styles.formGroup}><label>Composição Básica</label><textarea name="composicaoBasica" value={formData.composicaoBasica} onChange={handleChange}></textarea></div>
             </div>
           )}
-
-          {/* --- ABA EMBALAGEM --- */}
           {activeTab === 'embalagem' && (
             <div className={styles.tabContent}>
               <div className={styles.formGroup}><label>Modo de Usar</label><textarea name="modoDeUsar" value={formData.modoDeUsar} onChange={handleChange}></textarea></div>
@@ -246,8 +247,6 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
               <div className={styles.formGroup}><label>Endereço Fabricante</label><input type="text" name="informacoesFabricante.endereco" value={formData.informacoesFabricante.endereco} onChange={handleChange} /></div>
             </div>
           )}
-
-          {/* --- ABA FRETE --- */}
           {activeTab === 'frete' && (
             <div className={styles.tabContent}>
                 <h4>Dimensões da Embalagem</h4>
@@ -259,7 +258,6 @@ const ProductFormModal = ({ product, isOpen, onClose, onSave }) => {
                 </div>
             </div>
           )}
-
           <div className={styles.actions}>
             <button type="button" onClick={onClose} className={styles.cancelButton}>Cancelar</button>
             <button type="submit" className={styles.saveButton}>Salvar Produto</button>

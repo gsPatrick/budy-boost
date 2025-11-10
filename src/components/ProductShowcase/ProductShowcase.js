@@ -15,8 +15,8 @@ const ProductShowcase = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await ApiService.get('/produtos/mais-vendidos', {
-          params: { limit: 5 },
+        const response = await ApiService.get('/produtos', {
+          params: { limit: 5 }
         });
 
         // --- LÓGICA DE MAPEAMENTO SIMPLIFICADA ---

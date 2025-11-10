@@ -43,8 +43,6 @@ const ProductManager = () => {
     const isEditing = !!editingProduct;
     try {
       let savedProduct;
-
-      // Prepara os dados, garantindo que campos numéricos sejam números
       const dataToSend = {
         ...productData,
         preco: parseFloat(productData.preco) || 0,
@@ -57,6 +55,9 @@ const ProductManager = () => {
       } else {
         const response = await ApiService.post('/produtos', dataToSend);
         savedProduct = response.data;
+        // --- MUDANÇA IMPORTANTE AQUI ---
+        // Limpa o rascunho do localStorage após a criação bem-sucedida
+        localStorage.removeItem('productFormDraft');
       }
 
       if (imageFiles && imageFiles.length > 0) {
@@ -64,7 +65,6 @@ const ProductManager = () => {
         imageFiles.forEach(file => {
           formData.append('files', file);
         });
-        
         await ApiService.postForm(`/uploads/produtos/${savedProduct.id}/imagens`, formData);
       }
 
@@ -108,7 +108,6 @@ const ProductManager = () => {
             <thead>
               <tr>
                 <th>Produto</th>
-                {/* --- CABEÇALHOS ATUALIZADOS --- */}
                 <th>Preço</th>
                 <th>Estoque</th>
                 <th>Categoria</th>
@@ -130,7 +129,6 @@ const ProductManager = () => {
                         <strong>{product.nome}</strong>
                       </div>
                     </td>
-                    {/* --- DADOS ATUALIZADOS (sem 'firstVariation') --- */}
                     <td>R$ {product.preco ? parseFloat(product.preco).toFixed(2).replace('.', ',') : '0,00'}</td>
                     <td>{product.estoque} unidades</td>
                     <td><span className={styles.categoryBadge}>{product.categoria?.nome || 'Sem Categoria'}</span></td>
