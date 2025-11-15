@@ -68,6 +68,203 @@
     color: #DC2626;
 }
 
+/* --- ESTILOS PARA AS NOVAS SEÇÕES DE COMPRA --- */
+.purchaseOptionsContainer {
+  margin-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 1rem;
+}
+
+/* Grade de Quantidade */
+.quantityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.quantityOption {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.quantityOption:hover {
+  border-color: #1A234B;
+  background-color: #f9fafb;
+}
+
+.quantityOption.selectedOption {
+  border-color: #1A234B;
+  background-color: #f0f5ff;
+  box-shadow: 0 0 0 2px #1A234B;
+}
+
+.quantityOption img {
+  object-fit: contain;
+}
+
+.quantityOption div {
+  display: flex;
+  flex-direction: column;
+}
+
+.quantityTitle {
+  font-weight: 600;
+  color: #1A234B;
+}
+
+.discountTag {
+  color: #16a34a;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-left: 0.5rem;
+}
+
+.pricePerJar {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.tag {
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.3rem 1rem;
+  border-radius: 0 0 8px 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.popular {
+  background-color: #16a34a; /* Verde */
+}
+
+.bestValue {
+  background-color: #1A234B; /* Azul */
+}
+
+/* Seleção de Plano */
+.planOption {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.planOption:hover {
+  border-color: #1A234B;
+}
+
+.planOption.selectedOption {
+  border-color: #1A234B;
+  background-color: #f0f5ff;
+  box-shadow: 0 0 0 2px #1A234B;
+}
+
+.planOption input[type="radio"] {
+  margin-top: 5px;
+  width: 18px;
+  height: 18px;
+  accent-color: #1A234B; /* Moderno, para navegadores que suportam */
+}
+
+.planOption > div {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.planTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1A234B;
+}
+
+.planPrice {
+  font-weight: 600;
+  color: #555;
+  margin-top: 0.3rem;
+}
+
+.saveTag {
+  background-color: #16a34a;
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
+
+.planBenefits {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.planBenefits span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Seletor de Tamanho do Cão */
+.dogSizeSelector {
+  margin-top: 1.5rem;
+  display: flex;
+  gap: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 8px;
+  padding: 0.3rem;
+}
+
+.dogSizeSelector button {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+  transition: all 0.2s ease;
+}
+
+.dogSizeSelector button.activeDogSize {
+  background-color: white;
+  color: #1A234B;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.dogSizeSelector button strong {
+  display: block;
+  font-size: 0.8rem;
+}
+
 /* Abas (Tabs) */
 .tabs { 
     display: flex; 
@@ -224,4 +421,140 @@
 }
 .infoSection h4:first-child {
     margin-top: 0;
+}
+
+/* /components/ProductDetails/ProductDetails.module.css */
+
+/* ... (todos os estilos que você já tem) ... */
+
+/* --- AJUSTES E NOVOS ESTILOS PARA A SEÇÃO DE PLANOS --- */
+
+.planOption {
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  margin-top: 1rem;
+  cursor: pointer;
+  display: grid; /* MUDANÇA para grid para melhor alinhamento */
+  grid-template-columns: auto 1fr auto; /* Colunas: radio, texto, preço */
+  gap: 1rem;
+  align-items: center;
+  position: relative; /* Para a tag de economia */
+  flex-wrap: wrap; /* Permite que o seletor de cão quebre a linha */
+}
+
+.planOption:hover {
+  border-color: #1A234B;
+}
+
+.planOption.selectedOption {
+  border-color: #1A234B;
+  background-color: #f0f5ff;
+  box-shadow: 0 0 0 2px #1A234B;
+}
+
+.planOption input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  accent-color: #1A234B;
+}
+
+.planText {
+  display: flex;
+  flex-direction: column;
+}
+
+.planTitle {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1A234B;
+}
+
+.planPriceContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.planOriginalPrice {
+  text-decoration: line-through;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.planFinalPrice {
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1A234B;
+}
+
+.saveTag {
+  position: absolute;
+  top: -12px; /* Posiciona a tag para fora da caixa */
+  right: 20px;
+  background-color: #16a34a;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.planBenefits {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #333;
+}
+
+.planBenefits span {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Seletor de Tamanho do Cão */
+.dogSizeSelectorWrapper {
+  grid-column: 2 / 4; /* Faz o wrapper ocupar a 2ª e 3ª colunas do grid */
+  margin-top: 1rem;
+}
+
+.dogSizeLabel {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.8rem;
+  font-size: 1rem;
+}
+
+.dogSizeSelector {
+  display: flex;
+  gap: 0.5rem;
+  background-color: #e5e7eb;
+  border-radius: 8px;
+  padding: 0.3rem;
+}
+
+.dogSizeSelector button {
+  flex: 1;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 6px;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 0.9rem;
+  color: #555;
+  transition: all 0.2s ease;
+}
+
+.dogSizeSelector button.activeDogSize {
+  background-color: white;
+  color: #1A234B;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.dogSizeSelector button strong {
+  display: block;
+  font-size: 0.8rem;
 }
