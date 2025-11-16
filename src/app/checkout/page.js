@@ -131,9 +131,10 @@ export default function CheckoutPage() {
               setCardToken(token.token);
               addDebugLog('CARDFORM', 'Token salvo no estado', { token: token.token });
               
-              // Se está processando (aguardando token), processa agora
-              if (isProcessing) {
+              // Se o formulário foi submetido e está aguardando o token, processa agora
+              if (shouldProcessPayment.current) {
                 addDebugLog('CARDFORM', 'Token recebido, iniciando processamento do pagamento');
+                shouldProcessPayment.current = false; // Resetar a flag
                 processarPagamento();
               }
             } else if (errorData) {
