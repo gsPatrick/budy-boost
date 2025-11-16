@@ -29,27 +29,53 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
   const [cardFormInstance, setCardFormInstance] = useState(null);
+  const [debugLogs, setDebugLogs] = useState([]);
+
+  // Função helper para adicionar logs de debug
+  const addDebugLog = (category, message, data = null) => {
+    const timestamp = new Date().toLocaleTimeString();
+    const logEntry = {
+      timestamp,
+      category,
+      message,
+      data: data ? JSON.parse(JSON.stringify(data)) : null
+    };
+    
+    console.log(`[${timestamp}] [${category}] ${message}`, data || '');
+    setDebugLogs(prev => [...prev, logEntry]);
+  };
 
   useEffect(() => {
-    console.log("DEBUG: Efeito de inicialização do MP disparado.");
+    addDebugLog('INIT', 'Componente montado');
+    addDebugLog('USER', 'Dados do usuário', { user });
+    addDebugLog('CART', 'Itens do carrinho', { cartItems, subtotal, cartItemCount });
+
     if (typeof window !== 'undefined' && window.MercadoPago) {
       const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
-      console.log("DEBUG: Chave pública definida:", publicKey);
-      mpInstance = new window.MercadoPago(publicKey);
-      console.log("DEBUG: Instância do Mercado Pago criada:", mpInstance);
+      addDebugLog('MP_INIT', 'Inicializando Mercado Pago SDK', { publicKey });
+      
+      try {
+        mpInstance = new window.MercadoPago(publicKey);
+        addDebugLog('MP_INIT', 'Mercado Pago inicializado com sucesso', { mpInstance });
+      } catch (error) {
+        addDebugLog('MP_INIT_ERROR', 'Erro ao inicializar Mercado Pago', { error: error.message, stack: error.stack });
+      }
     } else {
-      console.error("DEBUG: Objeto window.MercadoPago não encontrado!");
+      addDebugLog('MP_INIT_ERROR', 'SDK do Mercado Pago não encontrado no window');
     }
+
     if (user) {
       setEmail(user.email);
+      addDebugLog('USER', 'Email definido do usuário', { email: user.email });
     }
   }, [user]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-        if (cartItemCount === 0) {
-            router.push('/loja');
-        }
+      if (cartItemCount === 0) {
+        addDebugLog('CART', 'Carrinho vazio, redirecionando para loja');
+        router.push('/loja');
+      }
     }, 500);
     return () => clearTimeout(timer);
   }, [cartItemCount, router]);
@@ -57,10 +83,12 @@ export default function CheckoutPage() {
   const total = subtotal + (selectedShipping?.price || 0);
 
   useEffect(() => {
-    console.log("DEBUG: Efeito de montagem do CardForm disparado.");
+    addDebugLog('PAYMENT_METHOD', 'Método de pagamento alterado', { paymentMethod, total });
+
     if (mpInstance && paymentMethod === 'card') {
-      console.log("DEBUG: Condições atendidas. Montando CardForm...");
-      const instance = mpInstance.cardForm({
+      addDebugLog('CARDFORM', 'Iniciando configuração do CardForm');
+
+      const cardFormConfig = {
         amount: String(total.toFixed(2)),
         iframe: true,
         form: {
@@ -75,22 +103,51 @@ export default function CheckoutPage() {
           identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "Número do documento" },
         },
         callbacks: {
-          onFormMounted: error => { 
-            if (error) return console.error("DEBUG: Erro ao montar formulário:", error);
-            console.log("DEBUG: Formulário do cartão montado com sucesso.");
+          onFormMounted: error => {
+            if (error) {
+              addDebugLog('CARDFORM_ERROR', 'Erro ao montar formulário', { error });
+              console.error("Erro ao montar formulário:", error);
+            } else {
+              addDebugLog('CARDFORM', 'Formulário montado com sucesso');
+            }
           },
-          onError: error => { 
-            setPaymentError("Verifique os dados do seu cartão."); 
-            console.error("DEBUG: Erro no CardForm (callback onError):", error);
+          onError: error => {
+            addDebugLog('CARDFORM_ERROR', 'Erro no CardForm', { error });
+            setPaymentError("Verifique os dados do seu cartão.");
+            console.error("Erro no CardForm:", error);
           },
+          onSubmit: (event) => {
+            addDebugLog('CARDFORM', 'onSubmit callback triggered', { event });
+          },
+          onFetching: (resource) => {
+            addDebugLog('CARDFORM', 'Buscando recurso', { resource });
+          },
+          onCardTokenReceived: (errorData, token) => {
+            addDebugLog('CARDFORM', 'Token recebido no callback', { errorData, token });
+          },
+          onInstallmentsReceived: (error, installments) => {
+            addDebugLog('CARDFORM', 'Parcelas recebidas', { error, installments });
+          },
+          onPaymentMethodsReceived: (error, paymentMethods) => {
+            addDebugLog('CARDFORM', 'Métodos de pagamento recebidos', { error, paymentMethods });
+          }
         }
-      });
-      setCardFormInstance(instance);
+      };
+
+      addDebugLog('CARDFORM', 'Configuração do CardForm', cardFormConfig);
+
+      try {
+        const instance = mpInstance.cardForm(cardFormConfig);
+        setCardFormInstance(instance);
+        addDebugLog('CARDFORM', 'CardForm instance criada', { instance });
+      } catch (error) {
+        addDebugLog('CARDFORM_ERROR', 'Erro ao criar CardForm instance', { error: error.message, stack: error.stack });
+      }
     }
     
     return () => {
       if (cardFormInstance) {
-        console.log("DEBUG: Desmontando instância do CardForm.");
+        addDebugLog('CARDFORM', 'Desmontando CardForm');
         cardFormInstance.unmount();
         setCardFormInstance(null);
       }
@@ -99,199 +156,630 @@ export default function CheckoutPage() {
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
+    addDebugLog('FORM', 'Campo de endereço alterado', { name, value });
     setShippingAddress(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCepLookup = async () => { /* ... (sem alterações) ... */ };
-  const copyToClipboard = () => { /* ... (sem alterações) ... */ };
+  const handleCepLookup = async () => {
+    const cep = shippingAddress.cep.replace(/\D/g, '');
+    addDebugLog('CEP', 'Buscando CEP', { cep, cepOriginal: shippingAddress.cep });
+
+    if (cep.length !== 8) {
+      addDebugLog('CEP_ERROR', 'CEP inválido (não tem 8 dígitos)', { cep, length: cep.length });
+      return;
+    }
+
+    setLoadingCep(true);
+    
+    try {
+      addDebugLog('CEP', 'Fazendo requisição para ViaCEP', { url: `https://viacep.com.br/ws/${cep}/json/` });
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+      const data = await response.json();
+      
+      addDebugLog('CEP', 'Resposta do ViaCEP', { response: data });
+
+      if (!data.erro) {
+        const newAddress = {
+          address: data.logradouro,
+          neighborhood: data.bairro,
+          city: data.localidade,
+          state: data.uf,
+        };
+        
+        addDebugLog('CEP', 'CEP encontrado, atualizando endereço', newAddress);
+        setShippingAddress(prev => ({ ...prev, ...newAddress }));
+      } else {
+        addDebugLog('CEP_ERROR', 'CEP não encontrado (erro retornado pela API)');
+        alert("CEP não encontrado.");
+      }
+      
+      const freteFixo = [{ 
+        id: 'frete_fixo_nacional', 
+        name: 'Frete Fixo (Brasil)', 
+        price: 9.90, 
+        delivery: 'Em até 7 dias úteis' 
+      }];
+      
+      addDebugLog('SHIPPING', 'Opções de frete definidas', freteFixo);
+      setShippingOptions(freteFixo);
+      setSelectedShipping(freteFixo[0]);
+      
+    } catch (error) {
+      addDebugLog('CEP_ERROR', 'Erro na requisição do CEP', { 
+        error: error.message, 
+        stack: error.stack 
+      });
+      console.error("Erro ao buscar CEP:", error);
+      alert("Não foi possível buscar o CEP.");
+    } finally {
+      setLoadingCep(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    addDebugLog('PIX', 'Copiando código PIX para clipboard', { qr_code: pixData.qr_code });
+    navigator.clipboard.writeText(pixData.qr_code);
+    alert('Código Pix Copiado!');
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    console.log("DEBUG: Botão 'Pagar Agora' clicado. Iniciando handleSubmit.");
+    addDebugLog('SUBMIT', 'Formulário submetido', { 
+      paymentMethod, 
+      selectedShipping, 
+      isProcessing 
+    });
+
     if (isProcessing || !selectedShipping) {
-      if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
+      if (!selectedShipping) {
+        addDebugLog('SUBMIT_ERROR', 'Frete não selecionado');
+        setPaymentError("Por favor, calcule e selecione um método de frete.");
+      }
       return;
     }
+
     setIsProcessing(true);
     setPaymentError(null);
 
     try {
-      console.log("DEBUG: 1. Criando pedido no backend...");
-      const pedidoResponse = await ApiService.post('/pedidos', {
-        itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
+      // Criar pedido
+      const pedidoPayload = {
+        itens: cartItems.map(item => ({ 
+          produtoId: item.id, 
+          quantidade: item.quantity 
+        })),
         enderecoEntrega: shippingAddress,
         freteId: selectedShipping.id,
+      };
+
+      addDebugLog('PEDIDO', 'Criando pedido - Payload', pedidoPayload);
+      
+      const pedidoResponse = await ApiService.post('/pedidos', pedidoPayload);
+      
+      addDebugLog('PEDIDO', 'Resposta do backend - Pedido criado', { 
+        status: pedidoResponse.status,
+        data: pedidoResponse.data,
+        headers: pedidoResponse.headers
       });
+      
       const pedidoId = pedidoResponse.data.id;
-      console.log("DEBUG: Pedido criado com sucesso. ID:", pedidoId);
+      addDebugLog('PEDIDO', 'ID do pedido', { pedidoId });
 
       if (paymentMethod === 'card') {
-        console.log("DEBUG: 2. Método de pagamento é 'card'.");
-        if (!mpInstance) throw new Error("O SDK do Mercado Pago não foi inicializado.");
+        addDebugLog('PAYMENT_CARD', 'Iniciando pagamento com cartão');
 
-        console.log("DEBUG: 3. Chamando createCardToken...");
-        const cardToken = await mpInstance.createCardToken({
-          cardholderName: document.getElementById('form-checkout__cardholderName').value,
-          identificationType: document.getElementById('form-checkout__identificationType').value,
-          identificationNumber: document.getElementById('form-checkout__identificationNumber').value,
+        if (!mpInstance) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'mpInstance não existe');
+          throw new Error("O SDK do Mercado Pago não foi inicializado.");
+        }
+
+        // Coletar dados do formulário
+        const cardholderName = document.getElementById('form-checkout__cardholderName')?.value;
+        const identificationType = document.getElementById('form-checkout__identificationType')?.value;
+        const identificationNumber = document.getElementById('form-checkout__identificationNumber')?.value;
+        const installments = document.getElementById('form-checkout__installments')?.value;
+        const issuer = document.getElementById('form-checkout__issuer')?.value;
+
+        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
+          cardholderName,
+          identificationType,
+          identificationNumber,
+          installments,
+          issuer,
         });
-        
-        console.log("DEBUG: 4. Resposta de createCardToken:", JSON.stringify(cardToken, null, 2));
+
+        // Criar token do cartão
+        const tokenPayload = {
+          cardholderName,
+          identificationType,
+          identificationNumber,
+        };
+
+        addDebugLog('PAYMENT_CARD', 'Criando token do cartão - Payload', tokenPayload);
+
+        let cardToken;
+        try {
+          cardToken = await mpInstance.createCardToken(tokenPayload);
+          addDebugLog('PAYMENT_CARD', 'Token do cartão criado - RESPOSTA COMPLETA', {
+            cardToken,
+            id: cardToken?.id,
+            payment_method_id: cardToken?.payment_method_id,
+            issuer_id: cardToken?.issuer_id,
+            cardholder: cardToken?.cardholder,
+            first_six_digits: cardToken?.first_six_digits,
+            last_four_digits: cardToken?.last_four_digits,
+            expiration_month: cardToken?.expiration_month,
+            expiration_year: cardToken?.expiration_year,
+            date_created: cardToken?.date_created,
+            date_last_updated: cardToken?.date_last_updated,
+            date_due: cardToken?.date_due,
+            live_mode: cardToken?.live_mode,
+            luhn_validation: cardToken?.luhn_validation,
+            status: cardToken?.status,
+            security_code_length: cardToken?.security_code_length,
+            allKeys: Object.keys(cardToken || {}),
+            fullObject: JSON.stringify(cardToken, null, 2)
+          });
+        } catch (tokenError) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'Erro ao criar token do cartão', {
+            error: tokenError.message,
+            stack: tokenError.stack,
+            cause: tokenError.cause,
+            tokenError
+          });
+          throw tokenError;
+        }
         
         if (!cardToken || !cardToken.id) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'Token inválido retornado', { cardToken });
           throw new Error("Não foi possível gerar o token do cartão. Verifique os dados e tente novamente.");
         }
 
-        const payloadParaBackend = {
+        // Preparar payload para o backend
+        const paymentPayload = {
           payment_method: 'card',
           pedidoId: pedidoId,
           token: cardToken.id,
-          issuer_id: cardToken.issuer_id,
-          installments: parseInt(document.getElementById('form-checkout__installments').value),
+          issuer_id: cardToken.issuer_id || issuer,
+          installments: parseInt(installments),
           payment_method_id: cardToken.payment_method_id,
           payer: {
             email: email,
             identification: {
-              type: cardToken.cardholder.identification.type,
-              number: cardToken.cardholder.identification.number,
+              type: cardToken.cardholder?.identification?.type || identificationType,
+              number: cardToken.cardholder?.identification?.number || identificationNumber,
             },
           },
         };
 
-        console.log("DEBUG: 5. Payload que será enviado para o backend:", JSON.stringify(payloadParaBackend, null, 2));
+        addDebugLog('PAYMENT_CARD', 'Enviando pagamento para backend - Payload COMPLETO', {
+          paymentPayload,
+          fields: {
+            payment_method: paymentPayload.payment_method,
+            pedidoId: paymentPayload.pedidoId,
+            token: paymentPayload.token,
+            issuer_id: paymentPayload.issuer_id,
+            installments: paymentPayload.installments,
+            payment_method_id: paymentPayload.payment_method_id,
+            payer: paymentPayload.payer,
+          },
+          payloadAsString: JSON.stringify(paymentPayload, null, 2)
+        });
 
-        const paymentResponse = await ApiService.post('/pagamentos/processar', payloadParaBackend);
-        console.log("DEBUG: 6. Resposta do backend:", paymentResponse.data);
+        let paymentResponse;
+        try {
+          paymentResponse = await ApiService.post('/pagamentos/processar', paymentPayload);
+          
+          addDebugLog('PAYMENT_CARD', 'Resposta do backend - Pagamento processado - RESPOSTA COMPLETA', {
+            status: paymentResponse.status,
+            statusText: paymentResponse.statusText,
+            data: paymentResponse.data,
+            headers: paymentResponse.headers,
+            paymentData: {
+              ...paymentResponse.data,
+              allDataKeys: Object.keys(paymentResponse.data || {})
+            },
+            dataAsString: JSON.stringify(paymentResponse.data, null, 2)
+          });
+        } catch (paymentError) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'Erro na requisição de pagamento', {
+            error: paymentError.message,
+            stack: paymentError.stack,
+            response: paymentError.response?.data,
+            status: paymentError.response?.status,
+            statusText: paymentError.response?.statusText,
+            headers: paymentError.response?.headers,
+            fullError: JSON.stringify(paymentError, null, 2)
+          });
+          throw paymentError;
+        }
 
         if (paymentResponse.data.status === 'approved') {
+          addDebugLog('PAYMENT_CARD', 'Pagamento aprovado! Limpando carrinho e redirecionando', {
+            pedidoId,
+            paymentStatus: paymentResponse.data.status
+          });
           clearCart();
           router.push(`/compra-confirmada?pedido=${pedidoId}`);
         } else {
+          addDebugLog('PAYMENT_CARD_ERROR', 'Pagamento não aprovado', {
+            status: paymentResponse.data.status,
+            status_detail: paymentResponse.data.status_detail,
+            fullResponse: paymentResponse.data
+          });
           throw new Error(`Pagamento recusado: ${paymentResponse.data.status_detail}`);
         }
 
       } else if (paymentMethod === 'pix') {
-        // ... (lógica do pix)
+        addDebugLog('PAYMENT_PIX', 'Iniciando pagamento com PIX');
+
+        const pixPayload = {
+          payment_method: 'pix',
+          pedidoId: pedidoId,
+        };
+
+        addDebugLog('PAYMENT_PIX', 'Enviando pagamento PIX para backend - Payload', pixPayload);
+
+        let pixResponse;
+        try {
+          pixResponse = await ApiService.post('/pagamentos/processar', pixPayload);
+          
+          addDebugLog('PAYMENT_PIX', 'Resposta do backend - PIX gerado - RESPOSTA COMPLETA', {
+            status: pixResponse.status,
+            data: pixResponse.data,
+            headers: pixResponse.headers,
+            pixData: {
+              ...pixResponse.data,
+              allDataKeys: Object.keys(pixResponse.data || {})
+            }
+          });
+        } catch (pixError) {
+          addDebugLog('PAYMENT_PIX_ERROR', 'Erro na requisição PIX', {
+            error: pixError.message,
+            stack: pixError.stack,
+            response: pixError.response?.data,
+            status: pixError.response?.status,
+          });
+          throw pixError;
+        }
+
+        setPixData(pixResponse.data);
+        addDebugLog('PAYMENT_PIX', 'Dados PIX salvos no estado', pixResponse.data);
       }
+
     } catch (error) {
-      console.error("DEBUG: Erro final no bloco catch do handleSubmit:", error);
+      addDebugLog('SUBMIT_ERROR', 'Erro geral no checkout', {
+        error: error.message,
+        stack: error.stack,
+        name: error.name,
+        cause: error.cause,
+        fullError: error,
+        response: error.response
+      });
+      console.error("Erro no checkout:", error);
       setPaymentError(error.message || "Ocorreu um erro inesperado.");
     } finally {
-      console.log("DEBUG: Finalizando handleSubmit (bloco finally).");
       setIsProcessing(false);
+      addDebugLog('SUBMIT', 'Processamento finalizado', { isProcessing: false });
     }
   };
 
-  // O resto do arquivo (renderização) permanece exatamente o mesmo.
-  // ... (código JSX para pixData, cartItemCount === 0, e o formulário principal)
+  // Console de Debug
+  const DebugConsole = () => (
+    <div style={{
+      position: 'fixed',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: '300px',
+      backgroundColor: '#1a1a1a',
+      color: '#00ff00',
+      fontFamily: 'monospace',
+      fontSize: '11px',
+      overflowY: 'auto',
+      zIndex: 9999,
+      padding: '10px',
+      borderTop: '2px solid #00ff00'
+    }}>
+      <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <strong style={{ color: '#fff' }}>🐛 DEBUG CONSOLE - Total de logs: {debugLogs.length}</strong>
+        <button 
+          onClick={() => {
+            console.clear();
+            setDebugLogs([]);
+            addDebugLog('SYSTEM', 'Logs limpos');
+          }}
+          style={{
+            backgroundColor: '#ff0000',
+            color: '#fff',
+            border: 'none',
+            padding: '5px 10px',
+            cursor: 'pointer',
+            fontSize: '11px'
+          }}
+        >
+          Limpar Logs
+        </button>
+      </div>
+      {debugLogs.map((log, index) => (
+        <div key={index} style={{ 
+          marginBottom: '8px', 
+          paddingBottom: '8px', 
+          borderBottom: '1px solid #333' 
+        }}>
+          <div>
+            <span style={{ color: '#888' }}>[{log.timestamp}]</span>
+            {' '}
+            <span style={{ 
+              color: log.category.includes('ERROR') ? '#ff0000' : '#00ffff',
+              fontWeight: 'bold' 
+            }}>
+              [{log.category}]
+            </span>
+            {' '}
+            <span style={{ color: '#ffff00' }}>{log.message}</span>
+          </div>
+          {log.data && (
+            <pre style={{ 
+              marginTop: '5px', 
+              marginLeft: '20px', 
+              color: '#90ee90',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all'
+            }}>
+              {JSON.stringify(log.data, null, 2)}
+            </pre>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+
   if (pixData) {
     return (
-      <main className={styles.main}>
-        <div className={styles.pixContainer}>
-          <h2>Finalize seu Pagamento com Pix</h2>
-          <p>Escaneie o QR Code abaixo com o app do seu banco ou use o código "Copia e Cola".</p>
-          <Image src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} alt="PIX QR Code" width={300} height={300} />
-          <p>Código Pix:</p>
-          <div className={styles.copyPaste}><input type="text" readOnly value={pixData.qr_code} /><button onClick={copyToClipboard}><FiCopy /> Copiar</button></div>
-          <p className={styles.pixWarning}>O QR Code expira em 30 minutos.</p>
-          <button className={styles.submitButton} onClick={() => router.push('/conta/pedidos')}>Acompanhar meu Pedido</button>
-        </div>
-      </main>
+      <>
+        <main className={styles.main}>
+          <div className={styles.pixContainer}>
+            <h2>Finalize seu Pagamento com Pix</h2>
+            <p>Escaneie o QR Code abaixo com o app do seu banco ou use o código "Copia e Cola".</p>
+            <Image src={`data:image/jpeg;base64,${pixData.qr_code_base64}`} alt="PIX QR Code" width={300} height={300} />
+            <p>Código Pix:</p>
+            <div className={styles.copyPaste}>
+              <input type="text" readOnly value={pixData.qr_code} />
+              <button onClick={copyToClipboard}><FiCopy /> Copiar</button>
+            </div>
+            <p className={styles.pixWarning}>O QR Code expira em 30 minutos.</p>
+            <button className={styles.submitButton} onClick={() => router.push('/conta/pedidos')}>
+              Acompanhar meu Pedido
+            </button>
+          </div>
+        </main>
+        <DebugConsole />
+      </>
     );
   }
 
   if (cartItemCount === 0) {
-    return <p>Seu carrinho está vazio. Redirecionando...</p>;
+    return (
+      <>
+        <p>Seu carrinho está vazio. Redirecionando...</p>
+        <DebugConsole />
+      </>
+    );
   }
 
   return (
-    <main className={styles.main}>
-      <div className={styles.container}>
-        <div className={styles.formColumn}>
-          <form id="form-checkout" onSubmit={handleSubmit}>
-            <div className={styles.formSection}>
-              <h2>Informações de Contato</h2>
-              <div className={styles.inputGroup}><label htmlFor="email">Email</label><input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-            </div>
-            <div className={styles.formSection}>
-              <h2>Endereço de Entrega</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.inputGroup}><label htmlFor="firstName">Nome</label><input type="text" name="firstName" value={shippingAddress.firstName} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="lastName">Sobrenome</label><input type="text" name="lastName" value={shippingAddress.lastName} onChange={handleAddressChange} required /></div>
-              </div>
-              <div className={styles.cepGroup}>
-                <div className={styles.inputGroup}><label htmlFor="cep">CEP</label><input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} placeholder="00000-000" required /></div>
-                <button type="button" onClick={handleCepLookup} disabled={loadingCep}>{loadingCep ? 'Buscando...' : 'Buscar Frete'}</button>
-              </div>
-              <div className={styles.inputGroup}><label htmlFor="address">Endereço</label><input type="text" name="address" value={shippingAddress.address} onChange={handleAddressChange} required /></div>
-              <div className={styles.formGrid}>
-                <div className={styles.inputGroup}><label htmlFor="number">Número</label><input type="text" name="number" value={shippingAddress.number} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="complement">Complemento (opcional)</label><input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} /></div>
-              </div>
-              <div className={styles.inputGroup}><label htmlFor="neighborhood">Bairro</label><input type="text" name="neighborhood" value={shippingAddress.neighborhood} onChange={handleAddressChange} required /></div>
-              <div className={styles.formGrid}>
-                <div className={styles.inputGroup}><label htmlFor="city">Cidade</label><input type="text" name="city" value={shippingAddress.city} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="state">Estado</label><select name="state" value={shippingAddress.state} onChange={handleAddressChange} required><option value="SP">São Paulo</option><option value="RJ">Rio de Janeiro</option><option value="MG">Minas Gerais</option><option value="BA">Bahia</option></select></div>
-              </div>
-            </div>
-            {shippingOptions.length > 0 && (
+    <>
+      <main className={styles.main}>
+        <div className={styles.container}>
+          <div className={styles.formColumn}>
+            <form id="form-checkout" onSubmit={handleSubmit}>
               <div className={styles.formSection}>
-                <h2>Método de Envio</h2>
-                {shippingOptions.map(opt => (
-                  <div key={opt.id} className={`${styles.shippingOption} ${selectedShipping?.id === opt.id ? styles.selected : ''}`} onClick={() => setSelectedShipping(opt)}>
-                    <input type="radio" checked={selectedShipping?.id === opt.id} readOnly />
-                    <div className={styles.shippingDetails}><span>{opt.name}</span><small>{opt.delivery}</small></div>
-                    <span className={styles.shippingPrice}>R$ {opt.price.toFixed(2).replace('.', ',')}</span>
+                <h2>Informações de Contato</h2>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="email">Email</label>
+                  <input 
+                    type="email" 
+                    id="email" 
+                    value={email} 
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      addDebugLog('FORM', 'Email alterado', { email: e.target.value });
+                    }} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className={styles.formSection}>
+                <h2>Endereço de Entrega</h2>
+                <div className={styles.formGrid}>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="firstName">Nome</label>
+                    <input type="text" name="firstName" value={shippingAddress.firstName} onChange={handleAddressChange} required />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="lastName">Sobrenome</label>
+                    <input type="text" name="lastName" value={shippingAddress.lastName} onChange={handleAddressChange} required />
+                  </div>
+                </div>
+                <div className={styles.cepGroup}>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="cep">CEP</label>
+                    <input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} placeholder="00000-000" required />
+                  </div>
+                  <button type="button" onClick={handleCepLookup} disabled={loadingCep}>
+                    {loadingCep ? 'Buscando...' : 'Buscar Frete'}
+                  </button>
+                </div>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="address">Endereço</label>
+                  <input type="text" name="address" value={shippingAddress.address} onChange={handleAddressChange} required />
+                </div>
+                <div className={styles.formGrid}>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="number">Número</label>
+                    <input type="text" name="number" value={shippingAddress.number} onChange={handleAddressChange} required />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="complement">Complemento (opcional)</label>
+                    <input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} />
+                  </div>
+                </div>
+                <div className={styles.inputGroup}>
+                  <label htmlFor="neighborhood">Bairro</label>
+                  <input type="text" name="neighborhood" value={shippingAddress.neighborhood} onChange={handleAddressChange} required />
+                </div>
+                <div className={styles.formGrid}>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="city">Cidade</label>
+                    <input type="text" name="city" value={shippingAddress.city} onChange={handleAddressChange} required />
+                  </div>
+                  <div className={styles.inputGroup}>
+                    <label htmlFor="state">Estado</label>
+                    <select name="state" value={shippingAddress.state} onChange={handleAddressChange} required>
+                      <option value="SP">São Paulo</option>
+                      <option value="RJ">Rio de Janeiro</option>
+                      <option value="MG">Minas Gerais</option>
+                      <option value="BA">Bahia</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {shippingOptions.length > 0 && (
+                <div className={styles.formSection}>
+                  <h2>Método de Envio</h2>
+                  {shippingOptions.map(opt => (
+                    <div 
+                      key={opt.id} 
+                      className={`${styles.shippingOption} ${selectedShipping?.id === opt.id ? styles.selected : ''}`} 
+                      onClick={() => {
+                        setSelectedShipping(opt);
+                        addDebugLog('SHIPPING', 'Frete selecionado', opt);
+                      }}
+                    >
+                      <input type="radio" checked={selectedShipping?.id === opt.id} readOnly />
+                      <div className={styles.shippingDetails}>
+                        <span>{opt.name}</span>
+                        <small>{opt.delivery}</small>
+                      </div>
+                      <span className={styles.shippingPrice}>R$ {opt.price.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className={styles.formSection}>
+                <h2>Pagamento</h2>
+                <div className={styles.paymentTabs}>
+                  <button 
+                    type="button" 
+                    className={paymentMethod === 'card' ? styles.activeTab : ''} 
+                    onClick={() => setPaymentMethod('card')}
+                  >
+                    <FiCreditCard /> Cartão de Crédito
+                  </button>
+                  <button 
+                    type="button" 
+                    className={paymentMethod === 'pix' ? styles.activeTab : ''} 
+                    onClick={() => setPaymentMethod('pix')}
+                  >
+                    <FiSmartphone /> Pix
+                  </button>
+                </div>
+
+                {paymentMethod === 'card' && (
+                  <div className={styles.paymentContent}>
+                    <div className={styles.inputGroup}>
+                      <label>Número do Cartão</label>
+                      <div id="form-checkout__cardNumber" className={styles.mpInput}></div>
+                    </div>
+                    <div className={styles.formGrid}>
+                      <div className={styles.inputGroup}>
+                        <label>Validade</label>
+                        <div id="form-checkout__expirationDate" className={styles.mpInput}></div>
+                      </div>
+                      <div className={styles.inputGroup}>
+                        <label>CVV</label>
+                        <div id="form-checkout__securityCode" className={styles.mpInput}></div>
+                      </div>
+                    </div>
+                    <div className={styles.inputGroup}>
+                      <label>Nome no Cartão</label>
+                      <input type="text" id="form-checkout__cardholderName" />
+                    </div>
+                    <div className={styles.formGrid}>
+                      <div className={styles.inputGroup}>
+                        <label>Tipo de Documento</label>
+                        <select id="form-checkout__identificationType"></select>
+                      </div>
+                      <div className={styles.inputGroup}>
+                        <label>Número do Documento</label>
+                        <input type="text" id="form-checkout__identificationNumber" />
+                      </div>
+                    </div>
+                    <div className={styles.inputGroup}>
+                      <label>Parcelas</label>
+                      <select id="form-checkout__installments"></select>
+                    </div>
+                    <select id="form-checkout__issuer" style={{ display: 'none' }}></select>
+                  </div>
+                )}
+
+                {paymentMethod === 'pix' && (
+                  <div className={styles.paymentContent + ' ' + styles.pixContent}>
+                    <p>Um QR Code para pagamento será gerado na próxima tela.</p>
+                  </div>
+                )}
+              </div>
+
+              {paymentError && <p className={styles.errorText}>{paymentError}</p>}
+
+              <button 
+                type="submit" 
+                className={styles.submitButton} 
+                disabled={isProcessing || !selectedShipping}
+              >
+                <FiLock /> {isProcessing ? 'Processando...' : `Pagar Agora (R$ ${total.toFixed(2).replace('.', ',')})`}
+              </button>
+            </form>
+          </div>
+
+          <div className={styles.summaryColumn}>
+            <div className={styles.summaryContent}>
+              <h2>Resumo do Pedido</h2>
+              <div className={styles.summaryItems}>
+                {cartItems.map(item => (
+                  <div key={item.id} className={styles.summaryItem}>
+                    <div className={styles.itemImage}>
+                      <Image src={item.image} alt={item.name} width={64} height={64} />
+                      <span className={styles.itemQuantity}>{item.quantity}</span>
+                    </div>
+                    <div className={styles.itemName}>{item.name}</div>
+                    <div className={styles.itemPrice}>
+                      R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-            <div className={styles.formSection}>
-              <h2>Pagamento</h2>
-              <div className={styles.paymentTabs}>
-                <button type="button" className={paymentMethod === 'card' ? styles.activeTab : ''} onClick={() => setPaymentMethod('card')}><FiCreditCard /> Cartão de Crédito</button>
-                <button type="button" className={paymentMethod === 'pix' ? styles.activeTab : ''} onClick={() => setPaymentMethod('pix')}><FiSmartphone /> Pix</button>
+              <div className={styles.summaryLine}>
+                <span>Subtotal</span>
+                <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
               </div>
-              {paymentMethod === 'card' && (
-                <div className={styles.paymentContent}>
-                  <div className={styles.inputGroup}><label>Número do Cartão</label><div id="form-checkout__cardNumber" className={styles.mpInput}></div></div>
-                  <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label>Validade</label><div id="form-checkout__expirationDate" className={styles.mpInput}></div></div>
-                    <div className={styles.inputGroup}><label>CVV</label><div id="form-checkout__securityCode" className={styles.mpInput}></div></div>
-                  </div>
-                  <div className={styles.inputGroup}><label>Nome no Cartão</label><input type="text" id="form-checkout__cardholderName" /></div>
-                  <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label>Tipo de Documento</label><select id="form-checkout__identificationType"></select></div>
-                    <div className={styles.inputGroup}><label>Número do Documento</label><input type="text" id="form-checkout__identificationNumber" /></div>
-                  </div>
-                   <div className={styles.inputGroup}><label>Parcelas</label><select id="form-checkout__installments"></select></div>
-                   <select id="form-checkout__issuer" style={{ display: 'none' }}></select>
-                </div>
-              )}
-              {paymentMethod === 'pix' && (<div className={styles.paymentContent + ' ' + styles.pixContent}><p>Um QR Code para pagamento será gerado na próxima tela.</p></div>)}
+              <div className={styles.summaryLine}>
+                <span>Frete</span>
+                <span>{selectedShipping ? `R$ ${selectedShipping.price.toFixed(2).replace('.', ',')}` : 'A calcular'}</span>
+              </div>
+              <div className={styles.summaryTotal}>
+                <span>Total</span>
+                <span>R$ {total.toFixed(2).replace('.', ',')}</span>
+              </div>
             </div>
-            {paymentError && <p className={styles.errorText}>{paymentError}</p>}
-            <button type="submit" className={styles.submitButton} disabled={isProcessing || !selectedShipping}><FiLock /> {isProcessing ? 'Processando...' : `Pagar Agora (R$ ${total.toFixed(2).replace('.', ',')})`}</button>
-          </form>
-        </div>
-        <div className={styles.summaryColumn}>
-          <div className={styles.summaryContent}>
-            <h2>Resumo do Pedido</h2>
-            <div className={styles.summaryItems}>
-              {cartItems.map(item => (
-                <div key={item.id} className={styles.summaryItem}>
-                  <div className={styles.itemImage}><Image src={item.image} alt={item.name} width={64} height={64} /><span className={styles.itemQuantity}>{item.quantity}</span></div>
-                  <div className={styles.itemName}>{item.name}</div>
-                  <div className={styles.itemPrice}>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</div>
-                </div>
-              ))}
-            </div>
-            <div className={styles.summaryLine}><span>Subtotal</span><span>R$ {subtotal.toFixed(2).replace('.', ',')}</span></div>
-            <div className={styles.summaryLine}><span>Frete</span><span>{selectedShipping ? `R$ ${selectedShipping.price.toFixed(2).replace('.', ',')}` : 'A calcular'}</span></div>
-            <div className={styles.summaryTotal}><span>Total</span><span>R$ {total.toFixed(2).replace('.', ',')}</span></div>
           </div>
         </div>
-      </div>
-    </main>
+      </main>
+      <DebugConsole />
+    </>
   );
 }
