@@ -9,7 +9,6 @@ import ApiService from '../../services/api.service';
 import { FiLock, FiCreditCard, FiSmartphone, FiCopy } from 'react-icons/fi';
 import styles from './checkout.module.css';
 
-// A instância do MP será gerenciada pelo estado para garantir que só exista no cliente
 let mpInstance;
 
 export default function CheckoutPage() {
@@ -17,7 +16,6 @@ export default function CheckoutPage() {
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estados
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -32,7 +30,6 @@ export default function CheckoutPage() {
   const [pixData, setPixData] = useState(null);
   const [cardFormInstance, setCardFormInstance] = useState(null);
 
-  // Efeito para inicializar o SDK do MP
   useEffect(() => {
     if (typeof window !== 'undefined' && window.MercadoPago) {
       const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
@@ -43,7 +40,6 @@ export default function CheckoutPage() {
     }
   }, [user]);
 
-  // Redireciona se o carrinho estiver vazio
   useEffect(() => {
     const timer = setTimeout(() => {
         if (cartItemCount === 0) {
@@ -55,7 +51,6 @@ export default function CheckoutPage() {
 
   const total = subtotal + (selectedShipping?.price || 0);
 
-  // Efeito para montar/desmontar o formulário de cartão
   useEffect(() => {
     if (mpInstance && paymentMethod === 'card') {
       const instance = mpInstance.cardForm({
@@ -101,16 +96,8 @@ export default function CheckoutPage() {
       const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
       const data = await response.json();
       if (!data.erro) {
-        setShippingAddress(prev => ({
-          ...prev,
-          address: data.logradouro,
-          neighborhood: data.bairro,
-          city: data.localidade,
-          state: data.uf,
-        }));
-      } else {
-        alert("CEP não encontrado.");
-      }
+        setShippingAddress(prev => ({ ...prev, address: data.logradouro, neighborhood: data.bairro, city: data.localidade, state: data.uf, }));
+      } else { alert("CEP não encontrado."); }
       
       const freteFixo = [{ id: 'frete_fixo_nacional', name: 'Frete Fixo (Brasil)', price: 9.90, delivery: 'Em até 7 dias úteis' }];
       setShippingOptions(freteFixo);
@@ -153,14 +140,20 @@ export default function CheckoutPage() {
           identificationType: document.getElementById('form-checkout__identificationType').value,
           identificationNumber: document.getElementById('form-checkout__identificationNumber').value,
         });
+        
+        // Verificação de segurança
+        if (!cardToken || !cardToken.id) {
+          throw new Error("Não foi possível gerar o token do cartão. Verifique os dados e tente novamente.");
+        }
 
+        // --- CORREÇÃO APLICADA AQUI ---
         const paymentResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'card',
           pedidoId: pedidoId,
           token: cardToken.id,
-          issuer_id: cardToken.issuer.id,
+          issuer_id: cardToken.issuer_id, // Correto: issuer_id
           installments: parseInt(document.getElementById('form-checkout__installments').value),
-          payment_method_id: cardToken.payment_method.id,
+          payment_method_id: cardToken.payment_method_id, // Correto: payment_method_id
           payer: {
             email: email,
             identification: {
