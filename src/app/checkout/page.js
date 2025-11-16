@@ -129,6 +129,16 @@ export default function CheckoutPage() {
             if (!errorData && token) {
               setCardToken(token.token);
               addDebugLog('CARDFORM', 'Token salvo no estado', { token: token.token });
+              
+              // Se está processando (aguardando token), processa agora
+              if (isProcessing) {
+                addDebugLog('CARDFORM', 'Token recebido, iniciando processamento do pagamento');
+                processarPagamento();
+              }
+            } else if (errorData) {
+              addDebugLog('CARDFORM_ERROR', 'Erro ao gerar token', { errorData });
+              setPaymentError("Erro ao processar dados do cartão. Verifique as informações.");
+              setIsProcessing(false);
             }
           },
           onInstallmentsReceived: (error, installments) => {
@@ -234,19 +244,40 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    
+    // Se já estiver processando, ignore
+    if (isProcessing) {
+      addDebugLog('SUBMIT', 'Já está processando, ignorando submit');
+      return;
+    }
+
     addDebugLog('SUBMIT', 'Formulário submetido', { 
       paymentMethod, 
       selectedShipping, 
-      isProcessing 
+      cardToken,
+      paymentMethodId
     });
 
-    if (isProcessing || !selectedShipping) {
-      if (!selectedShipping) {
-        addDebugLog('SUBMIT_ERROR', 'Frete não selecionado');
-        setPaymentError("Por favor, calcule e selecione um método de frete.");
-      }
+    // Validações iniciais
+    if (!selectedShipping) {
+      addDebugLog('SUBMIT_ERROR', 'Frete não selecionado');
+      setPaymentError("Por favor, calcule e selecione um método de frete.");
       return;
     }
+
+    // Se for cartão E o token ainda não foi gerado, só retorna
+    // O callback onCardTokenReceived vai chamar processarPagamentoComCartao quando o token chegar
+    if (paymentMethod === 'card' && !cardToken) {
+      addDebugLog('SUBMIT', 'Aguardando geração do token, CardForm vai processar...');
+      setIsProcessing(true); // Marcar como processando para desabilitar o botão
+      return;
+    }
+
+    // Se chegou aqui com PIX ou com token já pronto, processa
+    await processarPagamento();
+  };
+
+  const processarPagamento = async () => {
 
     setIsProcessing(true);
     setPaymentError(null);
