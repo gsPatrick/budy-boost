@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useCart } from '../../context/CartContext';
@@ -32,6 +32,7 @@ export default function CheckoutPage() {
   const [debugLogs, setDebugLogs] = useState([]);
   const [paymentMethodId, setPaymentMethodId] = useState(null);
   const [cardToken, setCardToken] = useState(null);
+  const shouldProcessPayment = useRef(false);
 
   // Função helper para adicionar logs de debug
   const addDebugLog = (category, message, data = null) => {
@@ -266,10 +267,11 @@ export default function CheckoutPage() {
     }
 
     // Se for cartão E o token ainda não foi gerado, só retorna
-    // O callback onCardTokenReceived vai chamar processarPagamentoComCartao quando o token chegar
+    // O callback onSubmit vai chamar processarPagamentoComCartao quando o token chegar
     if (paymentMethod === 'card' && !cardToken) {
       addDebugLog('SUBMIT', 'Aguardando geração do token, CardForm vai processar...');
       setIsProcessing(true); // Marcar como processando para desabilitar o botão
+      shouldProcessPayment.current = true; // Sinalizar que deve processar quando token chegar
       return;
     }
 
