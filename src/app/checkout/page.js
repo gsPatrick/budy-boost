@@ -9,7 +9,6 @@ import ApiService from '../../services/api.service';
 import { FiLock, FiCreditCard, FiSmartphone, FiDollarSign, FiCopy } from 'react-icons/fi';
 import styles from './checkout.module.css';
 
-// A instância do MP será gerenciada pelo estado para garantir que só exista no cliente
 let mpInstance;
 
 export default function CheckoutPage() {
@@ -17,7 +16,6 @@ export default function CheckoutPage() {
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estados
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -31,21 +29,17 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
-  // Efeito para inicializar o SDK do MP e preencher dados do usuário
   useEffect(() => {
     if (typeof window !== 'undefined' && window.MercadoPago) {
-      
-      // --- MUDANÇA PRINCIPAL AQUI: SUBSTITUA PELA SUA CHAVE DE PRODUÇÃO ---
-      const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c"; // Ex: APP_USR-xxxx-xxxx-xxxx
-      
+      const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
       mpInstance = new window.MercadoPago(publicKey);
+      console.log('✅ Mercado Pago SDK inicializado');
     }
     if (user) {
       setEmail(user.email);
     }
   }, [user]);
 
-  // Redireciona se o carrinho estiver vazio
   useEffect(() => {
     if (cartItemCount === 0) {
       router.push('/loja');
@@ -54,7 +48,6 @@ export default function CheckoutPage() {
 
   const total = subtotal + (selectedShipping?.price || 0);
 
-  // Efeito para montar/desmontar o formulário de cartão
   useEffect(() => {
     let cardForm;
     if (mpInstance && paymentMethod === 'card') {
@@ -73,8 +66,17 @@ export default function CheckoutPage() {
           identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Número do documento' },
         },
         callbacks: {
-          onFormMounted: error => { if (error) console.warn('Form Mounted error: ', error); },
-          onError: error => { setPaymentError("Verifique os dados do seu cartão."); console.error('Card Form Error:', error); },
+          onFormMounted: error => { 
+            if (error) {
+              console.error('❌ Form Mounted error:', error);
+            } else {
+              console.log('✅ Formulário de cartão montado');
+            }
+          },
+          onError: error => { 
+            setPaymentError("Verifique os dados do seu cartão."); 
+            console.error('❌ Card Form Error:', error); 
+          },
         },
       });
     }
@@ -139,40 +141,61 @@ export default function CheckoutPage() {
     setPaymentError(null);
 
     try {
+      console.log('📦 Criando pedido...');
       const pedidoResponse = await ApiService.post('/pedidos', {
         itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
         enderecoEntrega: shippingAddress,
         freteId: selectedShipping.id,
       });
       const pedidoId = pedidoResponse.data.id;
+      console.log('✅ Pedido criado:', pedidoId);
 
       if (paymentMethod === 'card' || paymentMethod === 'debit') {
         if (!mpInstance) throw new Error("O SDK do Mercado Pago não foi inicializado.");
 
+        console.log('💳 Coletando dados do cartão...');
+        const cardholderName = document.getElementById('form-checkout__cardholderName').value;
+        const identificationType = document.getElementById('form-checkout__identificationType').value;
+        const identificationNumber = document.getElementById('form-checkout__identificationNumber').value;
+        const issuerId = document.getElementById('form-checkout__issuer').value;
+        const installments = parseInt(document.getElementById('form-checkout__installments').value);
+
+        console.log('🔐 Criando token do cartão...');
         const cardToken = await mpInstance.createCardToken({
-          cardholderName: document.getElementById('form-checkout__cardholderName').value,
-          identificationType: document.getElementById('form-checkout__identificationType').value,
-          identificationNumber: document.getElementById('form-checkout__identificationNumber').value,
+          cardholderName: cardholderName,
+          identificationType: identificationType,
+          identificationNumber: identificationNumber,
         });
 
         if (!cardToken?.id) throw new Error("Não foi possível validar seu cartão. Verifique os dados.");
+        console.log('✅ Token criado:', cardToken.id);
+        console.log('💳 Bandeira detectada:', cardToken.payment_method_id);
 
-        const paymentResponse = await ApiService.post('/pagamentos/processar', {
+        const paymentData = {
+          payment_method_id: cardToken.payment_method_id,
           payment_method: 'card',
           pedidoId: pedidoId,
           token: cardToken.id,
-          issuer_id: document.getElementById('form-checkout__issuer').value,
-          installments: parseInt(document.getElementById('form-checkout__installments').value),
+          issuer_id: issuerId,
+          installments: installments,
+          transaction_amount: parseFloat(total.toFixed(2)),
           payer: {
             email: email,
             identification: {
-              type: cardToken.cardholder.identification.type,
-              number: cardToken.cardholder.identification.number,
+              type: identificationType,
+              number: identificationNumber,
             },
           },
-        });
+        };
+
+        console.log('📤 Enviando pagamento para o backend:', paymentData);
+
+        const paymentResponse = await ApiService.post('/pagamentos/processar', paymentData);
+
+        console.log('📥 Resposta do pagamento:', paymentResponse.data);
 
         if (paymentResponse.data.status === 'approved') {
+          console.log('✅ Pagamento aprovado!');
           clearCart();
           router.push(`/compra-confirmada?pedido=${pedidoId}`);
         } else {
@@ -180,15 +203,18 @@ export default function CheckoutPage() {
         }
 
       } else if (paymentMethod === 'pix') {
+        console.log('📱 Gerando PIX...');
         const pixResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'pix',
           pedidoId: pedidoId,
         });
+        console.log('✅ PIX gerado:', pixResponse.data);
         setPixData(pixResponse.data);
       }
 
     } catch (error) {
-      console.error("Erro no checkout:", error);
+      console.error("❌ Erro no checkout:", error);
+      console.error("❌ Detalhes do erro:", error.response?.data);
       setPaymentError(error.response?.data?.erro || error.message || "Ocorreu um erro inesperado.");
     } finally {
       setIsProcessing(false);
