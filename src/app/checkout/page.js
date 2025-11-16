@@ -141,19 +141,19 @@ export default function CheckoutPage() {
           identificationNumber: document.getElementById('form-checkout__identificationNumber').value,
         });
         
-        // Verificação de segurança
         if (!cardToken || !cardToken.id) {
           throw new Error("Não foi possível gerar o token do cartão. Verifique os dados e tente novamente.");
         }
 
         // --- CORREÇÃO APLICADA AQUI ---
+        // Agora estamos enviando todos os campos que o backend espera.
         const paymentResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'card',
           pedidoId: pedidoId,
           token: cardToken.id,
-          issuer_id: cardToken.issuer_id, // Correto: issuer_id
+          issuer_id: cardToken.issuer_id, // Adicionado
           installments: parseInt(document.getElementById('form-checkout__installments').value),
-          payment_method_id: cardToken.payment_method_id, // Correto: payment_method_id
+          payment_method_id: cardToken.payment_method_id, // Adicionado
           payer: {
             email: email,
             identification: {
