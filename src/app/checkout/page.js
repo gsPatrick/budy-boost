@@ -10,17 +10,14 @@ import { FiLock, FiCreditCard, FiSmartphone, FiDollarSign, FiCopy } from 'react-
 import styles from './checkout.module.css';
 
 // A instância do MP será gerenciada pelo estado para garantir que só exista no cliente
-// let mp; // Removido da variável global
+let mpInstance;
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estado para a instância do Mercado Pago
-  const [mpInstance, setMpInstance] = useState(null);
-
-  // Estados do formulário e UI
+  // Estados
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -34,16 +31,14 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
-  // Efeito para inicializar o SDK do MP de forma segura no cliente
+  // Efeito para inicializar o SDK do MP e preencher dados do usuário
   useEffect(() => {
-    // Garante que o código só rode no navegador (onde 'window' existe)
     if (typeof window !== 'undefined' && window.MercadoPago) {
       
-      // --- MUDANÇA PRINCIPAL AQUI: Chave pública hardcoded ---
-      const publicKey = "APP_USR-75963d27-853a-4fba-95dc-770b05153179";
+      // --- MUDANÇA PRINCIPAL AQUI: SUBSTITUA PELA SUA CHAVE DE PRODUÇÃO ---
+      const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c"; // Ex: APP_USR-xxxx-xxxx-xxxx
       
-      const mp = new window.MercadoPago(publicKey);
-      setMpInstance(mp); // Armazena a instância no estado para uso posterior
+      mpInstance = new window.MercadoPago(publicKey);
     }
     if (user) {
       setEmail(user.email);
@@ -62,7 +57,6 @@ export default function CheckoutPage() {
   // Efeito para montar/desmontar o formulário de cartão
   useEffect(() => {
     let cardForm;
-    // Só executa se a instância do MP já foi criada
     if (mpInstance && paymentMethod === 'card') {
       cardForm = mpInstance.cardForm({
         amount: String(total.toFixed(2)),
@@ -89,7 +83,7 @@ export default function CheckoutPage() {
         cardForm.unmount();
       }
     };
-  }, [paymentMethod, total, mpInstance]); // Depende da instância do MP estar pronta
+  }, [paymentMethod, total]);
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -115,12 +109,11 @@ export default function CheckoutPage() {
         alert("CEP não encontrado.");
       }
       
-      // MUDANÇA PRINCIPAL AQUI: Gerando a opção de frete que o backend espera.
       const freteFixo = [
         { id: 'frete_fixo_nacional', name: 'Frete Fixo (Brasil)', price: 9.90, delivery: 'Em até 7 dias úteis' },
       ];
       setShippingOptions(freteFixo);
-      setSelectedShipping(freteFixo[0]); // Seleciona o frete fixo por padrão
+      setSelectedShipping(freteFixo[0]);
 
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
@@ -137,7 +130,10 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isProcessing || !selectedShipping) return;
+    if (isProcessing || !selectedShipping) {
+      if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
+      return;
+    }
 
     setIsProcessing(true);
     setPaymentError(null);
@@ -150,7 +146,7 @@ export default function CheckoutPage() {
       });
       const pedidoId = pedidoResponse.data.id;
 
-      if (paymentMethod === 'card') {
+      if (paymentMethod === 'card' || paymentMethod === 'debit') {
         if (!mpInstance) throw new Error("O SDK do Mercado Pago não foi inicializado.");
 
         const cardToken = await mpInstance.createCardToken({
