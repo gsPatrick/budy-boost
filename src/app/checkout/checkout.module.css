@@ -1,0 +1,329 @@
+/* src/app/checkout/checkout.module.css */
+
+.main {
+  background-color: #f8f9fa;
+  padding: 4rem 2rem;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 0.7fr;
+  gap: 4rem;
+  align-items: flex-start;
+}
+
+.formColumn {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.formSection {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.formSection:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.formSection h2 {
+  font-size: 1.5rem;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.inputGroup label {
+  font-weight: 600;
+  color: #333;
+}
+
+.inputGroup input,
+.inputGroup select {
+  width: 100%;
+  padding: 0.9rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.cepGroup {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+.cepGroup .inputGroup {
+  flex-grow: 1;
+}
+.cepGroup button {
+  padding: 0.9rem 1.5rem;
+  background-color: #f3f4f6;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  height: 48px; /* Alinha com a altura do input */
+}
+.cepGroup button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shippingOption {
+  display: flex;
+  align-items: center;
+  padding: 1.2rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+}
+.shippingOption.selected {
+  border-color: #1A234B;
+  background-color: #f0f5ff;
+}
+.shippingDetails {
+  flex-grow: 1;
+  margin-left: 1rem;
+}
+.shippingDetails span {
+  display: block;
+  font-weight: 600;
+}
+.shippingDetails small {
+  color: #555;
+}
+.shippingPrice {
+  font-weight: 700;
+}
+
+.paymentTabs {
+  display: flex;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+.paymentTabs button {
+  flex: 1;
+  background-color: #f8f9fa;
+  border: none;
+  padding: 1rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-right: 1px solid #ccc;
+}
+.paymentTabs button:last-child {
+  border-right: none;
+}
+.paymentTabs .activeTab {
+  background-color: white;
+  color: #1A234B;
+}
+.paymentContent {
+  padding: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.pixContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+}
+.mpInput {
+  height: 48px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 0.9rem;
+  display: flex;
+  align-items: center;
+}
+.errorText {
+  color: #DC2626;
+  background-color: #fee2e2;
+  padding: 0.8rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.submitButton {
+  width: 100%;
+  background-color: #1A234B;
+  color: white;
+  padding: 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+.submitButton:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.summaryColumn {
+  position: sticky;
+  top: 120px;
+}
+.summaryContent {
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 15px;
+  border: 1px solid #e5e7eb;
+}
+.summaryContent h2 {
+  font-size: 1.5rem;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.summaryItems {
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 1rem;
+  margin-bottom: 1.5rem;
+}
+.summaryItem {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.itemImage {
+  position: relative;
+}
+.itemImage img {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+.itemQuantity {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #555;
+  color: white;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+.itemName {
+  flex-grow: 1;
+  font-weight: 500;
+}
+.itemPrice {
+  font-weight: 600;
+}
+.summaryLine {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: #555;
+}
+.summaryTotal {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1A234B;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 1.5rem;
+}
+
+.pixContainer {
+  max-width: 600px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 3rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+.pixContainer h2 {
+  color: #1A234B;
+}
+.copyPaste {
+  display: flex;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.copyPaste input {
+  flex-grow: 1;
+  border: none;
+  padding: 0.8rem;
+  font-size: 0.9rem;
+  background-color: #f8f9fa;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.copyPaste button {
+  background-color: #e5e7eb;
+  border: none;
+  padding: 0 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+.pixWarning {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+@media (max-width: 900px) {
+  .container {
+    grid-template-columns: 1fr;
+  }
+  .summaryColumn {
+    position: static;
+    order: -1;
+    margin-bottom: 2rem;
+  }
+}

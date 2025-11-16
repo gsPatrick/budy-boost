@@ -1,6 +1,7 @@
 import { Assistant } from 'next/font/google';
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from 'next/script'; // 1. Importe o componente Script
 
 // Componentes do Layout
 import Header from "../components/Header/Header";
@@ -40,6 +41,8 @@ export default function RootLayout({ children }) {
             <Footer />
           </CartProvider>
         </AuthProvider>
+                <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
+
       </body>
     </html>
   );

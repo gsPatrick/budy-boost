@@ -1,12 +1,17 @@
+// /components/CartPanel/CartPanel.js
+
 'use client';
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation'; // 1. Importe o useRouter
 import { FiX, FiTrash2 } from 'react-icons/fi';
 import { useCart } from '../../context/CartContext';
 import styles from './CartPanel.module.css';
 
 const CartPanel = () => {
+  const router = useRouter(); // 2. Instancie o router
+  
   // Pega todas as funções e estados necessários do contexto
   const { 
     isPanelOpen, 
@@ -16,6 +21,12 @@ const CartPanel = () => {
     updateCartQuantity, 
     subtotal 
   } = useCart();
+
+  // 3. Crie a função para navegar para o checkout
+  const handleCheckout = () => {
+    closeCartPanel(); // Fecha o painel do carrinho
+    router.push('/checkout'); // Redireciona para a página de checkout
+  };
 
   if (!isPanelOpen) {
     return null;
@@ -66,7 +77,10 @@ const CartPanel = () => {
                 <span>R$ {subtotal.toFixed(2).replace('.', ',')}</span>
               </div>
               <p className={styles.shippingInfo}>Frete e impostos calculados no checkout.</p>
-              <button className={styles.checkoutButton}>Finalizar Compra</button>
+              {/* 4. Atualize o onClick do botão */}
+              <button onClick={handleCheckout} className={styles.checkoutButton}>
+                Finalizar Compra
+              </button>
             </div>
           </>
         )}
