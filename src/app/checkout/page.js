@@ -131,12 +131,12 @@ export default function CheckoutPage() {
               setCardToken(token.token);
               addDebugLog('CARDFORM', 'Token salvo no estado', { token: token.token });
               
-              // Se o formulário foi submetido e está aguardando o token, processa agora
-              if (shouldProcessPayment.current) {
-                addDebugLog('CARDFORM', 'Token recebido, iniciando processamento do pagamento');
-                shouldProcessPayment.current = false; // Resetar a flag
-                processarPagamento();
-              }
+	              // Se o formulário foi submetido e está aguardando o token, processa agora
+	              if (shouldProcessPayment.current) {
+	                addDebugLog('CARDFORM', 'Token recebido, iniciando processamento do pagamento');
+	                shouldProcessPayment.current = false; // Resetar a flag
+	                processarPagamento(token.token, paymentMethods[0].id);
+	              }
             } else if (errorData) {
               addDebugLog('CARDFORM_ERROR', 'Erro ao gerar token', { errorData });
               setPaymentError("Erro ao processar dados do cartão. Verifique as informações.");
@@ -276,16 +276,16 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Se chegou aqui com PIX ou com token já pronto, processa
-    await processarPagamento();
-  };
+	    // Se chegou aqui com PIX ou com token já pronto, processa
+	    await processarPagamento(cardToken, paymentMethodId);
+	  };
 
-  const processarPagamento = async () => {
-
-    setIsProcessing(true);
-    setPaymentError(null);
-
-    try {
+	  const processarPagamento = async (token, paymentMethodId) => {
+	
+	    setIsProcessing(true);
+	    setPaymentError(null);
+	
+	    try {
       // Criar pedido
       const pedidoPayload = {
         itens: cartItems.map(item => ({ 
@@ -324,42 +324,42 @@ export default function CheckoutPage() {
 	        const installments = document.getElementById('form-checkout__installments')?.value;
 	        const issuer = document.getElementById('form-checkout__issuer')?.value;
 	
-		        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
-		          identificationNumber,
-		          installments,
-		          issuer,
-		          cardToken: cardToken, // Usando o valor do estado
-		          paymentMethodId: paymentMethodId // Usando o valor do estado
-		        });
-		
-		        // VALIDAÇÕES antes de enviar
-		        if (!cardToken) {
-		          addDebugLog('PAYMENT_CARD_ERROR', 'Token do cartão não foi gerado ainda', { 
-		            cardToken 
-		          });
-		          // Este erro não deve ocorrer se o fluxo estiver correto, mas mantemos a validação.
-		          throw new Error("Token do cartão não disponível. Tente novamente.");
-		        }
-		
-		        if (!paymentMethodId) {
-		          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!', { 
-		            paymentMethodId 
-		          });
-		          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
-		        }
-		
-		        if (!issuer) {
-		          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!', { 
-		            issuer 
-		          });
-		          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
-		        }
+	        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
+	          identificationNumber,
+	          installments,
+	          issuer,
+	          cardToken: token, // Usando o valor do argumento
+	          paymentMethodId: paymentMethodId // Usando o valor do argumento
+	        });
+	
+	        // VALIDAÇÕES antes de enviar
+	        if (!token) {
+	          addDebugLog('PAYMENT_CARD_ERROR', 'Token do cartão não foi gerado ainda', { 
+	            token 
+	          });
+	          // Este erro não deve ocorrer se o fluxo estiver correto, mas mantemos a validação.
+	          throw new Error("Token do cartão não disponível. Tente novamente.");
+	        }
+	
+	        if (!paymentMethodId) {
+	          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!', { 
+	            paymentMethodId 
+	          });
+	          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
+	        }
+	
+	        if (!issuer) {
+	          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!', { 
+	            issuer 
+	          });
+	          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
+	        }
 
         // Preparar payload para o backend
         const paymentPayload = {
           payment_method: 'card',
           pedidoId: pedidoId,
-          token: cardToken, // Usar o token do estado (do callback)
+	          token: token, // Usar o token passado como argumento
           issuer_id: issuer,
           installments: parseInt(installments),
           payment_method_id: paymentMethodId,
