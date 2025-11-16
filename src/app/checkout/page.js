@@ -31,8 +31,8 @@ export default function CheckoutPage() {
   const [cardFormInstance, setCardFormInstance] = useState(null);
   const [debugLogs, setDebugLogs] = useState([]);
   const [paymentMethodId, setPaymentMethodId] = useState(null);
-  const [cardToken, setCardToken] = useState(null);
-  const shouldProcessPayment = useRef(false);
+  
+  // A ref 'shouldProcessPayment' foi removida pois não é mais necessária.
 
   // Função helper para adicionar logs de debug
   const addDebugLog = (category, message, data = null) => {
@@ -109,7 +109,6 @@ export default function CheckoutPage() {
           onFormMounted: error => {
             if (error) {
               addDebugLog('CARDFORM_ERROR', 'Erro ao montar formulário', { error });
-              console.error("Erro ao montar formulário:", error);
             } else {
               addDebugLog('CARDFORM', 'Formulário montado com sucesso');
             }
@@ -117,30 +116,30 @@ export default function CheckoutPage() {
           onError: error => {
             addDebugLog('CARDFORM_ERROR', 'Erro no CardForm', { error });
             setPaymentError("Verifique os dados do seu cartão.");
-            console.error("Erro no CardForm:", error);
           },
           onSubmit: (event) => {
-            addDebugLog('CARDFORM', 'onSubmit callback triggered', { event });
+            addDebugLog('CARDFORM', 'onSubmit callback triggered (pelo SDK do MP)', { event });
           },
           onFetching: (resource) => {
             addDebugLog('CARDFORM', 'Buscando recurso', { resource });
           },
+          // >>>>> MUDANÇA APLICADA AQUI <<<<<
           onCardTokenReceived: (errorData, token) => {
             addDebugLog('CARDFORM', 'Token recebido no callback', { errorData, token });
-            if (!errorData && token) {
-              setCardToken(token.token);
-              addDebugLog('CARDFORM', 'Token salvo no estado', { token: token.token });
-              
-	              // Se o formulário foi submetido e está aguardando o token, processa agora
-	              if (shouldProcessPayment.current) {
-	                addDebugLog('CARDFORM', 'Token recebido, iniciando processamento do pagamento');
-	                shouldProcessPayment.current = false; // Resetar a flag
-	                processarPagamento(token.token, paymentMethods[0].id);
-	              }
-            } else if (errorData) {
+
+            if (errorData) {
               addDebugLog('CARDFORM_ERROR', 'Erro ao gerar token', { errorData });
               setPaymentError("Erro ao processar dados do cartão. Verifique as informações.");
-              setIsProcessing(false);
+              setIsProcessing(false); // Libera o botão em caso de erro
+              return; // Para a execução
+            }
+
+            if (token) {
+              // Se recebemos o token, é porque o usuário clicou para pagar. Processamos imediatamente.
+              addDebugLog('CARDFORM', 'Token recebido, iniciando processamento do pagamento');
+              
+              // O paymentMethodId já foi salvo no estado pelo callback onPaymentMethodsReceived
+              processarPagamento(token.token, paymentMethodId);
             }
           },
           onInstallmentsReceived: (error, installments) => {
@@ -244,46 +243,41 @@ export default function CheckoutPage() {
     alert('Código Pix Copiado!');
   };
 
+  // >>>>> MUDANÇA APLICADA AQUI <<<<<
   const handleSubmit = async (event) => {
     event.preventDefault();
-    
-    // Se já estiver processando, ignore
     if (isProcessing) {
       addDebugLog('SUBMIT', 'Já está processando, ignorando submit');
       return;
     }
 
-    addDebugLog('SUBMIT', 'Formulário submetido', { 
-      paymentMethod, 
-      selectedShipping, 
-      cardToken,
-      paymentMethodId
-    });
-
-    // Validações iniciais
+    // Validação inicial
     if (!selectedShipping) {
       addDebugLog('SUBMIT_ERROR', 'Frete não selecionado');
       setPaymentError("Por favor, calcule e selecione um método de frete.");
       return;
     }
 
-    // Se for cartão E o token ainda não foi gerado, só retorna
-    // O callback onSubmit vai chamar processarPagamentoComCartao quando o token chegar
-    if (paymentMethod === 'card' && !cardToken) {
-      addDebugLog('SUBMIT', 'Aguardando geração do token, CardForm vai processar...');
-      setIsProcessing(true); // Marcar como processando para desabilitar o botão
-      shouldProcessPayment.current = true; // Sinalizar que deve processar quando token chegar
-      return;
+    setIsProcessing(true);
+    setPaymentError(null);
+
+    // Se for PIX, processamos diretamente, pois não depende de token.
+    if (paymentMethod === 'pix') {
+      addDebugLog('SUBMIT', 'Iniciando fluxo de pagamento PIX');
+      await processarPagamento(null, null); // Passamos null pois não há token/methodId
     }
+    // Se for Cartão, não fazemos NADA aqui.
+    // Apenas mantemos isProcessing como true. O formulário, ao ser submetido,
+    // fará o SDK do Mercado Pago gerar o token e chamar o callback onCardTokenReceived.
+    // É LÁ que o pagamento será processado.
+    else if (paymentMethod === 'card') {
+      addDebugLog('SUBMIT', 'Aguardando CardForm gerar o token...');
+      // A lógica foi movida para o callback 'onCardTokenReceived'
+    }
+  };
 
-	    // Se chegou aqui com PIX ou com token já pronto, processa
-	    await processarPagamento(cardToken, paymentMethodId);
-	  };
-
-	  const processarPagamento = async (token, paymentMethodId) => {
-	
-	    setIsProcessing(true);
-	    setPaymentError(null);
+  const processarPagamento = async (token, paymentMethodId) => {
+    // A função setIsProcessing(true) foi movida para o handleSubmit para uma resposta visual mais rápida
 	
 	    try {
       // Criar pedido
@@ -303,7 +297,6 @@ export default function CheckoutPage() {
       addDebugLog('PEDIDO', 'Resposta do backend - Pedido criado', { 
         status: pedidoResponse.status,
         data: pedidoResponse.data,
-        headers: pedidoResponse.headers
       });
       
       const pedidoId = pedidoResponse.data.id;
@@ -317,49 +310,36 @@ export default function CheckoutPage() {
           throw new Error("O SDK do Mercado Pago não foi inicializado.");
         }
 
-	        // Coletar dados do formulário
-	        // NOTA: Os valores de cardToken e paymentMethodId vêm do estado (state),
-	        // que foi atualizado pelo callback do Mercado Pago.
-	        const identificationNumber = document.getElementById('form-checkout__identificationNumber')?.value;
-	        const installments = document.getElementById('form-checkout__installments')?.value;
-	        const issuer = document.getElementById('form-checkout__issuer')?.value;
-	
-	        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
-	          identificationNumber,
-	          installments,
-	          issuer,
-	          cardToken: token, // Usando o valor do argumento
-	          paymentMethodId: paymentMethodId // Usando o valor do argumento
-	        });
-	
-	        // VALIDAÇÕES antes de enviar
-	        if (!token) {
-	          addDebugLog('PAYMENT_CARD_ERROR', 'Token do cartão não foi gerado ainda', { 
-	            token 
-	          });
-	          // Este erro não deve ocorrer se o fluxo estiver correto, mas mantemos a validação.
-	          throw new Error("Token do cartão não disponível. Tente novamente.");
-	        }
-	
-	        if (!paymentMethodId) {
-	          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!', { 
-	            paymentMethodId 
-	          });
-	          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
-	        }
-	
-	        if (!issuer) {
-	          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!', { 
-	            issuer 
-	          });
-	          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
-	        }
+        const identificationNumber = document.getElementById('form-checkout__identificationNumber')?.value;
+        const installments = document.getElementById('form-checkout__installments')?.value;
+        const issuer = document.getElementById('form-checkout__issuer')?.value;
 
-        // Preparar payload para o backend
+        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
+          identificationNumber,
+          installments,
+          issuer,
+          cardToken: token, // Usando o valor do argumento
+          paymentMethodId: paymentMethodId // Usando o valor do argumento
+        });
+
+        // VALIDAÇÕES antes de enviar
+        if (!token) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'Token do cartão não foi gerado.');
+          throw new Error("Token do cartão não disponível. Tente novamente.");
+        }
+        if (!paymentMethodId) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!');
+          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
+        }
+        if (!issuer) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!');
+          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
+        }
+
         const paymentPayload = {
           payment_method: 'card',
           pedidoId: pedidoId,
-	          token: token, // Usar o token passado como argumento
+          token: token, // Usar o token passado como argumento
           issuer_id: issuer,
           installments: parseInt(installments),
           payment_method_id: paymentMethodId,
@@ -372,61 +352,21 @@ export default function CheckoutPage() {
           },
         };
 
-        addDebugLog('PAYMENT_CARD', 'Enviando pagamento para backend - Payload COMPLETO', {
-          paymentPayload,
-          fields: {
-            payment_method: paymentPayload.payment_method,
-            pedidoId: paymentPayload.pedidoId,
-            token: paymentPayload.token,
-            issuer_id: paymentPayload.issuer_id,
-            installments: paymentPayload.installments,
-            payment_method_id: paymentPayload.payment_method_id,
-            payer: paymentPayload.payer,
-          },
-          payloadAsString: JSON.stringify(paymentPayload, null, 2)
+        addDebugLog('PAYMENT_CARD', 'Enviando pagamento para backend - Payload', paymentPayload);
+
+        const paymentResponse = await ApiService.post('/pagamentos/processar', paymentPayload);
+        
+        addDebugLog('PAYMENT_CARD', 'Resposta do backend - Pagamento processado', {
+          status: paymentResponse.status,
+          data: paymentResponse.data,
         });
 
-        let paymentResponse;
-        try {
-          paymentResponse = await ApiService.post('/pagamentos/processar', paymentPayload);
-          
-          addDebugLog('PAYMENT_CARD', 'Resposta do backend - Pagamento processado - RESPOSTA COMPLETA', {
-            status: paymentResponse.status,
-            statusText: paymentResponse.statusText,
-            data: paymentResponse.data,
-            headers: paymentResponse.headers,
-            paymentData: {
-              ...paymentResponse.data,
-              allDataKeys: Object.keys(paymentResponse.data || {})
-            },
-            dataAsString: JSON.stringify(paymentResponse.data, null, 2)
-          });
-        } catch (paymentError) {
-          addDebugLog('PAYMENT_CARD_ERROR', 'Erro na requisição de pagamento', {
-            error: paymentError.message,
-            stack: paymentError.stack,
-            response: paymentError.response?.data,
-            status: paymentError.response?.status,
-            statusText: paymentError.response?.statusText,
-            headers: paymentError.response?.headers,
-            fullError: JSON.stringify(paymentError, null, 2)
-          });
-          throw paymentError;
-        }
-
         if (paymentResponse.data.status === 'approved') {
-          addDebugLog('PAYMENT_CARD', 'Pagamento aprovado! Limpando carrinho e redirecionando', {
-            pedidoId,
-            paymentStatus: paymentResponse.data.status
-          });
+          addDebugLog('PAYMENT_CARD', 'Pagamento aprovado! Limpando carrinho e redirecionando');
           clearCart();
           router.push(`/compra-confirmada?pedido=${pedidoId}`);
         } else {
-          addDebugLog('PAYMENT_CARD_ERROR', 'Pagamento não aprovado', {
-            status: paymentResponse.data.status,
-            status_detail: paymentResponse.data.status_detail,
-            fullResponse: paymentResponse.data
-          });
+          addDebugLog('PAYMENT_CARD_ERROR', 'Pagamento não aprovado', { response: paymentResponse.data });
           throw new Error(`Pagamento recusado: ${paymentResponse.data.status_detail}`);
         }
 
@@ -440,28 +380,12 @@ export default function CheckoutPage() {
 
         addDebugLog('PAYMENT_PIX', 'Enviando pagamento PIX para backend - Payload', pixPayload);
 
-        let pixResponse;
-        try {
-          pixResponse = await ApiService.post('/pagamentos/processar', pixPayload);
-          
-          addDebugLog('PAYMENT_PIX', 'Resposta do backend - PIX gerado - RESPOSTA COMPLETA', {
-            status: pixResponse.status,
-            data: pixResponse.data,
-            headers: pixResponse.headers,
-            pixData: {
-              ...pixResponse.data,
-              allDataKeys: Object.keys(pixResponse.data || {})
-            }
-          });
-        } catch (pixError) {
-          addDebugLog('PAYMENT_PIX_ERROR', 'Erro na requisição PIX', {
-            error: pixError.message,
-            stack: pixError.stack,
-            response: pixError.response?.data,
-            status: pixError.response?.status,
-          });
-          throw pixError;
-        }
+        const pixResponse = await ApiService.post('/pagamentos/processar', pixPayload);
+        
+        addDebugLog('PAYMENT_PIX', 'Resposta do backend - PIX gerado', {
+          status: pixResponse.status,
+          data: pixResponse.data,
+        });
 
         setPixData(pixResponse.data);
         addDebugLog('PAYMENT_PIX', 'Dados PIX salvos no estado', pixResponse.data);
@@ -469,16 +393,13 @@ export default function CheckoutPage() {
 
     } catch (error) {
       addDebugLog('SUBMIT_ERROR', 'Erro geral no checkout', {
-        error: error.message,
-        stack: error.stack,
-        name: error.name,
-        cause: error.cause,
-        fullError: error,
-        response: error.response
+        message: error.message,
+        response: error.response?.data
       });
       console.error("Erro no checkout:", error);
-      setPaymentError(error.message || "Ocorreu um erro inesperado.");
+      setPaymentError(error.response?.data?.message || error.message || "Ocorreu um erro inesperado.");
     } finally {
+      // Apenas definimos isProcessing como false. A chamada inicial já foi feita no handleSubmit.
       setIsProcessing(false);
       addDebugLog('SUBMIT', 'Processamento finalizado', { isProcessing: false });
     }
@@ -487,66 +408,31 @@ export default function CheckoutPage() {
   // Console de Debug
   const DebugConsole = () => (
     <div style={{
-      position: 'fixed',
-      bottom: 0,
-      left: 0,
-      right: 0,
-      height: '300px',
-      backgroundColor: '#1a1a1a',
-      color: '#00ff00',
-      fontFamily: 'monospace',
-      fontSize: '11px',
-      overflowY: 'auto',
-      zIndex: 9999,
-      padding: '10px',
+      position: 'fixed', bottom: 0, left: 0, right: 0, height: '300px',
+      backgroundColor: '#1a1a1a', color: '#00ff00', fontFamily: 'monospace',
+      fontSize: '11px', overflowY: 'auto', zIndex: 9999, padding: '10px',
       borderTop: '2px solid #00ff00'
     }}>
       <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <strong style={{ color: '#fff' }}>🐛 DEBUG CONSOLE - Total de logs: {debugLogs.length}</strong>
         <button 
-          onClick={() => {
-            console.clear();
-            setDebugLogs([]);
-            addDebugLog('SYSTEM', 'Logs limpos');
-          }}
-          style={{
-            backgroundColor: '#ff0000',
-            color: '#fff',
-            border: 'none',
-            padding: '5px 10px',
-            cursor: 'pointer',
-            fontSize: '11px'
-          }}
+          onClick={() => { console.clear(); setDebugLogs([]); addDebugLog('SYSTEM', 'Logs limpos'); }}
+          style={{ backgroundColor: '#ff0000', color: '#fff', border: 'none', padding: '5px 10px', cursor: 'pointer', fontSize: '11px' }}
         >
           Limpar Logs
         </button>
       </div>
       {debugLogs.map((log, index) => (
-        <div key={index} style={{ 
-          marginBottom: '8px', 
-          paddingBottom: '8px', 
-          borderBottom: '1px solid #333' 
-        }}>
+        <div key={index} style={{ marginBottom: '8px', paddingBottom: '8px', borderBottom: '1px solid #333' }}>
           <div>
-            <span style={{ color: '#888' }}>[{log.timestamp}]</span>
-            {' '}
-            <span style={{ 
-              color: log.category.includes('ERROR') ? '#ff0000' : '#00ffff',
-              fontWeight: 'bold' 
-            }}>
+            <span style={{ color: '#888' }}>[{log.timestamp}]</span> {' '}
+            <span style={{ color: log.category.includes('ERROR') ? '#ff0000' : '#00ffff', fontWeight: 'bold' }}>
               [{log.category}]
-            </span>
-            {' '}
+            </span> {' '}
             <span style={{ color: '#ffff00' }}>{log.message}</span>
           </div>
           {log.data && (
-            <pre style={{ 
-              marginTop: '5px', 
-              marginLeft: '20px', 
-              color: '#90ee90',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all'
-            }}>
+            <pre style={{ marginTop: '5px', marginLeft: '20px', color: '#90ee90', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
               {JSON.stringify(log.data, null, 2)}
             </pre>
           )}
@@ -598,16 +484,7 @@ export default function CheckoutPage() {
                 <h2>Informações de Contato</h2>
                 <div className={styles.inputGroup}>
                   <label htmlFor="email">Email</label>
-                  <input 
-                    type="email" 
-                    id="email" 
-                    value={email} 
-                    onChange={(e) => {
-                      setEmail(e.target.value);
-                      addDebugLog('FORM', 'Email alterado', { email: e.target.value });
-                    }} 
-                    required 
-                  />
+                  <input type="email" id="email" value={email} onChange={(e) => { setEmail(e.target.value); addDebugLog('FORM', 'Email alterado', { email: e.target.value }); }} required />
                 </div>
               </div>
 
@@ -671,13 +548,8 @@ export default function CheckoutPage() {
                 <div className={styles.formSection}>
                   <h2>Método de Envio</h2>
                   {shippingOptions.map(opt => (
-                    <div 
-                      key={opt.id} 
-                      className={`${styles.shippingOption} ${selectedShipping?.id === opt.id ? styles.selected : ''}`} 
-                      onClick={() => {
-                        setSelectedShipping(opt);
-                        addDebugLog('SHIPPING', 'Frete selecionado', opt);
-                      }}
+                    <div key={opt.id} className={`${styles.shippingOption} ${selectedShipping?.id === opt.id ? styles.selected : ''}`} 
+                      onClick={() => { setSelectedShipping(opt); addDebugLog('SHIPPING', 'Frete selecionado', opt); }}
                     >
                       <input type="radio" checked={selectedShipping?.id === opt.id} readOnly />
                       <div className={styles.shippingDetails}>
@@ -693,18 +565,10 @@ export default function CheckoutPage() {
               <div className={styles.formSection}>
                 <h2>Pagamento</h2>
                 <div className={styles.paymentTabs}>
-                  <button 
-                    type="button" 
-                    className={paymentMethod === 'card' ? styles.activeTab : ''} 
-                    onClick={() => setPaymentMethod('card')}
-                  >
+                  <button type="button" className={paymentMethod === 'card' ? styles.activeTab : ''} onClick={() => setPaymentMethod('card')}>
                     <FiCreditCard /> Cartão de Crédito
                   </button>
-                  <button 
-                    type="button" 
-                    className={paymentMethod === 'pix' ? styles.activeTab : ''} 
-                    onClick={() => setPaymentMethod('pix')}
-                  >
+                  <button type="button" className={paymentMethod === 'pix' ? styles.activeTab : ''} onClick={() => setPaymentMethod('pix')}>
                     <FiSmartphone /> Pix
                   </button>
                 </div>
@@ -756,11 +620,7 @@ export default function CheckoutPage() {
 
               {paymentError && <p className={styles.errorText}>{paymentError}</p>}
 
-              <button 
-                type="submit" 
-                className={styles.submitButton} 
-                disabled={isProcessing || !selectedShipping}
-              >
+              <button type="submit" className={styles.submitButton} disabled={isProcessing || !selectedShipping}>
                 <FiLock /> {isProcessing ? 'Processando...' : `Pagar Agora (R$ ${total.toFixed(2).replace('.', ',')})`}
               </button>
             </form>
