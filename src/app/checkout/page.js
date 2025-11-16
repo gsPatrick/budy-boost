@@ -77,6 +77,9 @@ export default function CheckoutPage() {
             setPaymentError("Verifique os dados do seu cartão."); 
             console.error('❌ Card Form Error:', error); 
           },
+          onFetching: (resource) => {
+            console.log('⏳ Buscando:', resource);
+          },
         },
       });
     }
@@ -169,10 +172,34 @@ export default function CheckoutPage() {
 
         if (!cardToken?.id) throw new Error("Não foi possível validar seu cartão. Verifique os dados.");
         console.log('✅ Token criado:', cardToken.id);
-        console.log('💳 Bandeira detectada:', cardToken.payment_method_id);
+        console.log('🔍 Token completo:', cardToken);
+
+        // CORREÇÃO: Detectar payment_method_id
+        let paymentMethodId = null;
+
+        // Tentar pegar do token (algumas versões do SDK retornam)
+        if (cardToken.payment_method_id) {
+          paymentMethodId = cardToken.payment_method_id;
+          console.log('✅ Payment Method do token:', paymentMethodId);
+        } 
+        // Tentar detectar pela primeira dígito do cartão (fallback)
+        else {
+          const cardNumberInput = document.querySelector('#form-checkout__cardNumber input');
+          const firstDigit = cardNumberInput?.value?.replace(/\s/g, '').charAt(0);
+          
+          if (firstDigit === '4') paymentMethodId = 'visa';
+          else if (firstDigit === '5') paymentMethodId = 'master';
+          else if (firstDigit === '3') paymentMethodId = 'amex';
+          else if (firstDigit === '6') paymentMethodId = 'elo';
+          else paymentMethodId = 'visa'; // fallback padrão
+          
+          console.log('⚠️ Payment Method detectado por fallback (primeiro dígito):', paymentMethodId);
+        }
+
+        console.log('💳 Bandeira final:', paymentMethodId);
 
         const paymentData = {
-          payment_method_id: cardToken.payment_method_id,
+          payment_method_id: paymentMethodId,
           payment_method: 'card',
           pedidoId: pedidoId,
           token: cardToken.id,
