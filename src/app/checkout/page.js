@@ -317,40 +317,43 @@ export default function CheckoutPage() {
           throw new Error("O SDK do Mercado Pago não foi inicializado.");
         }
 
-        // Coletar dados do formulário
-        const identificationNumber = document.getElementById('form-checkout__identificationNumber')?.value;
-        const installments = document.getElementById('form-checkout__installments')?.value;
-        const issuer = document.getElementById('form-checkout__issuer')?.value;
-
-        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
-          identificationNumber,
-          installments,
-          issuer,
-          cardToken: cardToken,
-          paymentMethodId: paymentMethodId
-        });
-
-        // VALIDAÇÕES antes de enviar
-        if (!cardToken) {
-          addDebugLog('PAYMENT_CARD_ERROR', 'Token do cartão não foi gerado ainda', { 
-            cardToken 
-          });
-          throw new Error("Aguarde enquanto processamos os dados do cartão...");
-        }
-
-        if (!paymentMethodId) {
-          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!', { 
-            paymentMethodId 
-          });
-          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
-        }
-
-        if (!issuer) {
-          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!', { 
-            issuer 
-          });
-          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
-        }
+	        // Coletar dados do formulário
+	        // NOTA: Os valores de cardToken e paymentMethodId vêm do estado (state),
+	        // que foi atualizado pelo callback do Mercado Pago.
+	        const identificationNumber = document.getElementById('form-checkout__identificationNumber')?.value;
+	        const installments = document.getElementById('form-checkout__installments')?.value;
+	        const issuer = document.getElementById('form-checkout__issuer')?.value;
+	
+		        addDebugLog('PAYMENT_CARD', 'Dados coletados do formulário', {
+		          identificationNumber,
+		          installments,
+		          issuer,
+		          cardToken: cardToken, // Usando o valor do estado
+		          paymentMethodId: paymentMethodId // Usando o valor do estado
+		        });
+		
+		        // VALIDAÇÕES antes de enviar
+		        if (!cardToken) {
+		          addDebugLog('PAYMENT_CARD_ERROR', 'Token do cartão não foi gerado ainda', { 
+		            cardToken 
+		          });
+		          // Este erro não deve ocorrer se o fluxo estiver correto, mas mantemos a validação.
+		          throw new Error("Token do cartão não disponível. Tente novamente.");
+		        }
+		
+		        if (!paymentMethodId) {
+		          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!', { 
+		            paymentMethodId 
+		          });
+		          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
+		        }
+		
+		        if (!issuer) {
+		          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!', { 
+		            issuer 
+		          });
+		          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
+		        }
 
         // Preparar payload para o backend
         const paymentPayload = {
