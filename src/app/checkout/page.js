@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   const [pixData, setPixData] = useState(null);
   const [cardFormInstance, setCardFormInstance] = useState(null);
   const [debugLogs, setDebugLogs] = useState([]);
+  const [paymentMethodId, setPaymentMethodId] = useState(null);
 
   // Função helper para adicionar logs de debug
   const addDebugLog = (category, message, data = null) => {
@@ -130,6 +131,10 @@ export default function CheckoutPage() {
           },
           onPaymentMethodsReceived: (error, paymentMethods) => {
             addDebugLog('CARDFORM', 'Métodos de pagamento recebidos', { error, paymentMethods });
+            if (!error && paymentMethods && paymentMethods.length > 0) {
+              setPaymentMethodId(paymentMethods[0].id);
+              addDebugLog('CARDFORM', 'payment_method_id salvo no estado', { payment_method_id: paymentMethods[0].id });
+            }
           }
         }
       };
@@ -340,9 +345,9 @@ export default function CheckoutPage() {
           payment_method: 'card',
           pedidoId: pedidoId,
           token: cardToken.id,
-          issuer_id: cardToken.issuer_id || issuer,
+          issuer_id: issuer, // Pegar do select oculto do formulário
           installments: parseInt(installments),
-          payment_method_id: cardToken.payment_method_id,
+          payment_method_id: paymentMethodId, // Pegar do estado (callback onPaymentMethodsReceived)
           payer: {
             email: email,
             identification: {
@@ -351,6 +356,23 @@ export default function CheckoutPage() {
             },
           },
         };
+
+        // Validação antes de enviar
+        if (!paymentPayload.payment_method_id) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'payment_method_id não definido!', { 
+            paymentMethodId, 
+            paymentPayload 
+          });
+          throw new Error("payment_method_id não foi capturado. Aguarde o formulário carregar completamente.");
+        }
+
+        if (!paymentPayload.issuer_id) {
+          addDebugLog('PAYMENT_CARD_ERROR', 'issuer_id não definido!', { 
+            issuer, 
+            paymentPayload 
+          });
+          throw new Error("issuer_id não foi capturado. Verifique o banco emissor do cartão.");
+        }
 
         addDebugLog('PAYMENT_CARD', 'Enviando pagamento para backend - Payload COMPLETO', {
           paymentPayload,
