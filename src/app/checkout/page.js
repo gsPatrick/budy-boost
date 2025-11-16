@@ -6,19 +6,18 @@ import Image from 'next/image';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/api.service';
-import { FiLock, FiCreditCard, FiSmartphone, FiDollarSign, FiCopy } from 'react-icons/fi';
+import { FiLock, FiCreditCard, FiSmartphone, FiCopy } from 'react-icons/fi';
 import styles from './checkout.module.css';
+
+// A instância do MP será gerenciada pelo estado para garantir que só exista no cliente
+let mpInstance;
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estados para a instância do MP e do CardForm
-  const [mpInstance, setMpInstance] = useState(null);
-  const [cardForm, setCardForm] = useState(null);
-
-  // Estados do formulário e UI
+  // Estados
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -31,13 +30,13 @@ export default function CheckoutPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
+  const [cardFormInstance, setCardFormInstance] = useState(null);
 
-  // Efeito para inicializar o SDK do MP de forma segura
+  // Efeito para inicializar o SDK do MP
   useEffect(() => {
     if (typeof window !== 'undefined' && window.MercadoPago) {
       const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
-      const mp = new window.MercadoPago(publicKey);
-      setMpInstance(mp);
+      mpInstance = new window.MercadoPago(publicKey);
     }
     if (user) {
       setEmail(user.email);
@@ -46,19 +45,17 @@ export default function CheckoutPage() {
 
   // Redireciona se o carrinho estiver vazio
   useEffect(() => {
-    // A verificação `isInitialized` do seu CartContext seria ideal aqui, mas por segurança,
-    // vamos verificar o cartItemCount após um pequeno delay para garantir que o localStorage foi lido.
     const timer = setTimeout(() => {
         if (cartItemCount === 0) {
             router.push('/loja');
         }
-    }, 500); // Delay de 500ms
+    }, 500);
     return () => clearTimeout(timer);
   }, [cartItemCount, router]);
 
   const total = subtotal + (selectedShipping?.price || 0);
 
-  // Efeito para montar e desmontar o formulário de cartão
+  // Efeito para montar/desmontar o formulário de cartão
   useEffect(() => {
     if (mpInstance && paymentMethod === 'card') {
       const instance = mpInstance.cardForm({
@@ -77,18 +74,16 @@ export default function CheckoutPage() {
         },
         callbacks: {
           onFormMounted: error => { if (error) console.error("Erro ao montar formulário:", error); },
-          onSubmit: event => { event.preventDefault(); handleSubmit(event); },
           onError: error => { setPaymentError("Verifique os dados do seu cartão."); console.error("Erro no CardForm:", error); },
         }
       });
-      setCardForm(instance);
+      setCardFormInstance(instance);
     }
     
-    // Função de limpeza
     return () => {
-      if (cardForm) {
-        cardForm.unmount();
-        setCardForm(null);
+      if (cardFormInstance) {
+        cardFormInstance.unmount();
+        setCardFormInstance(null);
       }
     };
   }, [paymentMethod, total, mpInstance]);
@@ -134,7 +129,7 @@ export default function CheckoutPage() {
   };
 
   const handleSubmit = async (event) => {
-    if (event) event.preventDefault();
+    event.preventDefault();
     if (isProcessing || !selectedShipping) {
       if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
       return;
@@ -150,23 +145,27 @@ export default function CheckoutPage() {
       });
       const pedidoId = pedidoResponse.data.id;
 
-      if (paymentMethod === 'card' || paymentMethod === 'debit') {
-        if (!cardForm) throw new Error("Formulário de cartão não está pronto.");
-        
-        const cardFormData = cardForm.getCardFormData();
+      if (paymentMethod === 'card') {
+        if (!mpInstance) throw new Error("O SDK do Mercado Pago não foi inicializado.");
+
+        const cardToken = await mpInstance.createCardToken({
+          cardholderName: document.getElementById('form-checkout__cardholderName').value,
+          identificationType: document.getElementById('form-checkout__identificationType').value,
+          identificationNumber: document.getElementById('form-checkout__identificationNumber').value,
+        });
 
         const paymentResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'card',
           pedidoId: pedidoId,
-          token: cardFormData.token,
-          issuer_id: cardFormData.issuerId,
-          installments: Number(cardFormData.installments),
-          payment_method_id: cardFormData.paymentMethodId,
+          token: cardToken.id,
+          issuer_id: cardToken.issuer.id,
+          installments: parseInt(document.getElementById('form-checkout__installments').value),
+          payment_method_id: cardToken.payment_method.id,
           payer: {
-            email: document.getElementById('email').value,
+            email: email,
             identification: {
-              type: cardFormData.identificationType,
-              number: cardFormData.identificationNumber,
+              type: cardToken.cardholder.identification.type,
+              number: cardToken.cardholder.identification.number,
             },
           },
         });
@@ -177,6 +176,7 @@ export default function CheckoutPage() {
         } else {
           throw new Error(`Pagamento recusado: ${paymentResponse.data.status_detail}`);
         }
+
       } else if (paymentMethod === 'pix') {
         const pixResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'pix',
@@ -186,7 +186,7 @@ export default function CheckoutPage() {
       }
     } catch (error) {
       console.error("Erro no checkout:", error);
-      setPaymentError(error.response?.data?.erro || error.message || "Ocorreu um erro inesperado.");
+      setPaymentError(error.message || "Ocorreu um erro inesperado.");
     } finally {
       setIsProcessing(false);
     }
