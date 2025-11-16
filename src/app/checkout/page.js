@@ -9,14 +9,16 @@ import ApiService from '../../services/api.service';
 import { FiLock, FiCreditCard, FiSmartphone, FiDollarSign, FiCopy } from 'react-icons/fi';
 import styles from './checkout.module.css';
 
-let mpInstance;
-let cardFormInstance; // Variável para armazenar a instância do cardForm
-
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
+  // Estados para a instância do MP e do CardForm
+  const [mpInstance, setMpInstance] = useState(null);
+  const [cardForm, setCardForm] = useState(null);
+
+  // Estados do formulário e UI
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -30,71 +32,66 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
+  // Efeito para inicializar o SDK do MP de forma segura
   useEffect(() => {
     if (typeof window !== 'undefined' && window.MercadoPago) {
-      // ATENÇÃO: Use sua chave pública real
       const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
-      mpInstance = new window.MercadoPago(publicKey);
-      console.log('✅ Mercado Pago SDK inicializado');
+      const mp = new window.MercadoPago(publicKey);
+      setMpInstance(mp);
     }
     if (user) {
       setEmail(user.email);
     }
   }, [user]);
 
+  // Redireciona se o carrinho estiver vazio
   useEffect(() => {
-    if (cartItemCount === 0) {
-      router.push('/loja');
-    }
+    // A verificação `isInitialized` do seu CartContext seria ideal aqui, mas por segurança,
+    // vamos verificar o cartItemCount após um pequeno delay para garantir que o localStorage foi lido.
+    const timer = setTimeout(() => {
+        if (cartItemCount === 0) {
+            router.push('/loja');
+        }
+    }, 500); // Delay de 500ms
+    return () => clearTimeout(timer);
   }, [cartItemCount, router]);
 
   const total = subtotal + (selectedShipping?.price || 0);
 
+  // Efeito para montar e desmontar o formulário de cartão
   useEffect(() => {
     if (mpInstance && paymentMethod === 'card') {
-      // Desmonta a instância anterior se existir
-      if (cardFormInstance) {
-        cardFormInstance.unmount();
-      }
-
-      cardFormInstance = mpInstance.cardForm({
+      const instance = mpInstance.cardForm({
         amount: String(total.toFixed(2)),
         iframe: true,
         form: {
-          id: 'form-checkout',
-          cardNumber: { id: 'form-checkout__cardNumber', placeholder: '0000 0000 0000 0000' },
-          expirationDate: { id: 'form-checkout__expirationDate', placeholder: 'MM/YY' },
-          securityCode: { id: 'form-checkout__securityCode', placeholder: 'CVC' },
-          cardholderName: { id: 'form-checkout__cardholderName', placeholder: 'Nome impresso no cartão' },
-          issuer: { id: 'form-checkout__issuer' },
-          installments: { id: 'form-checkout__installments' },
-          identificationType: { id: 'form-checkout__identificationType' },
-          identificationNumber: { id: 'form-checkout__identificationNumber', placeholder: 'Número do documento' },
+          id: "form-checkout",
+          cardNumber: { id: "form-checkout__cardNumber", placeholder: "Número do cartão" },
+          expirationDate: { id: "form-checkout__expirationDate", placeholder: "MM/YY" },
+          securityCode: { id: "form-checkout__securityCode", placeholder: "CVC" },
+          cardholderName: { id: "form-checkout__cardholderName", placeholder: "Nome no cartão" },
+          issuer: { id: "form-checkout__issuer", placeholder: "Banco emissor" },
+          installments: { id: "form-checkout__installments", placeholder: "Parcelas" },
+          identificationType: { id: "form-checkout__identificationType", placeholder: "Tipo de documento" },
+          identificationNumber: { id: "form-checkout__identificationNumber", placeholder: "Número do documento" },
         },
         callbacks: {
-          onFormMounted: error => { 
-            if (error) {
-              console.error('❌ Form Mounted error:', error);
-            } else {
-              console.log('✅ Formulário de cartão montado');
-            }
-          },
-          onError: error => { 
-            setPaymentError("Verifique os dados do seu cartão."); 
-            console.error('❌ Card Form Error:', error); 
-          },
-          onFetching: (resource) => {
-            console.log('⏳ Buscando:', resource);
-          },
-        },
+          onFormMounted: error => { if (error) console.error("Erro ao montar formulário:", error); },
+          onSubmit: event => { event.preventDefault(); handleSubmit(event); },
+          onError: error => { setPaymentError("Verifique os dados do seu cartão."); console.error("Erro no CardForm:", error); },
+        }
       });
+      setCardForm(instance);
     }
+    
+    // Função de limpeza
     return () => {
-      if (cardFormInstance) {
-        cardFormInstance.unmount();
+      if (cardForm) {
+        cardForm.unmount();
+        setCardForm(null);
       }
     };
-  }, [paymentMethod, total]);
+  }, [paymentMethod, total, mpInstance]);
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -120,12 +117,9 @@ export default function CheckoutPage() {
         alert("CEP não encontrado.");
       }
       
-      const freteFixo = [
-        { id: 'frete_fixo_nacional', name: 'Frete Fixo (Brasil)', price: 9.90, delivery: 'Em até 7 dias úteis' },
-      ];
+      const freteFixo = [{ id: 'frete_fixo_nacional', name: 'Frete Fixo (Brasil)', price: 9.90, delivery: 'Em até 7 dias úteis' }];
       setShippingOptions(freteFixo);
       setSelectedShipping(freteFixo[0]);
-
     } catch (error) {
       console.error("Erro ao buscar CEP:", error);
       alert("Não foi possível buscar o CEP.");
@@ -139,93 +133,59 @@ export default function CheckoutPage() {
     alert('Código Pix Copiado!');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    if (event) event.preventDefault();
     if (isProcessing || !selectedShipping) {
       if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
       return;
     }
-
     setIsProcessing(true);
     setPaymentError(null);
 
     try {
-      console.log('📦 Criando pedido...');
       const pedidoResponse = await ApiService.post('/pedidos', {
         itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
         enderecoEntrega: shippingAddress,
         freteId: selectedShipping.id,
       });
       const pedidoId = pedidoResponse.data.id;
-      console.log('✅ Pedido criado:', pedidoId);
 
       if (paymentMethod === 'card' || paymentMethod === 'debit') {
-        if (!mpInstance || !cardFormInstance) throw new Error("O SDK do Mercado Pago não foi inicializado ou o formulário não foi montado.");
-
-        console.log('🔐 Criando token do cartão e coletando dados...');
+        if (!cardForm) throw new Error("Formulário de cartão não está pronto.");
         
-        // CORREÇÃO CRÍTICA: Usar a função de submissão do CardForm para obter o token e os dados validados
-        const cardFormData = await cardFormInstance.getCardFormData();
-        
-        const {
-          token,
-          paymentMethodId,
-          issuerId,
-          installments,
-          identificationNumber,
-          identificationType,
-        } = cardFormData;
+        const cardFormData = cardForm.getCardFormData();
 
-        if (!token) throw new Error("Não foi possível validar seu cartão. Verifique os dados e tente novamente.");
-        
-        console.log('✅ Token criado:', token);
-        console.log('🔍 Dados do cartão validados:', cardFormData);
-
-        // O paymentMethodId e issuerId agora vêm validados do SDK
-        const paymentData = {
-          payment_method_id: paymentMethodId,
+        const paymentResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'card',
           pedidoId: pedidoId,
-          token: token,
-          issuer_id: issuerId,
-          installments: installments,
-          transaction_amount: parseFloat(total.toFixed(2)),
+          token: cardFormData.token,
+          issuer_id: cardFormData.issuerId,
+          installments: Number(cardFormData.installments),
+          payment_method_id: cardFormData.paymentMethodId,
           payer: {
-            email: email,
+            email: document.getElementById('email').value,
             identification: {
-              type: identificationType,
-              number: identificationNumber,
+              type: cardFormData.identificationType,
+              number: cardFormData.identificationNumber,
             },
           },
-        };
-
-        console.log('📤 Enviando pagamento para o backend:', paymentData);
-
-        const paymentResponse = await ApiService.post('/pagamentos/processar', paymentData);
-
-        console.log('📥 Resposta do pagamento:', paymentResponse.data);
+        });
 
         if (paymentResponse.data.status === 'approved') {
-          console.log('✅ Pagamento aprovado!');
           clearCart();
           router.push(`/compra-confirmada?pedido=${pedidoId}`);
         } else {
           throw new Error(`Pagamento recusado: ${paymentResponse.data.status_detail}`);
         }
-
       } else if (paymentMethod === 'pix') {
-        console.log('📱 Gerando PIX...');
         const pixResponse = await ApiService.post('/pagamentos/processar', {
           payment_method: 'pix',
           pedidoId: pedidoId,
         });
-        console.log('✅ PIX gerado:', pixResponse.data);
         setPixData(pixResponse.data);
       }
-
     } catch (error) {
-      console.error("❌ Erro no checkout:", error);
-      console.error("❌ Detalhes do erro:", error.response?.data);
+      console.error("Erro no checkout:", error);
       setPaymentError(error.response?.data?.erro || error.message || "Ocorreu um erro inesperado.");
     } finally {
       setIsProcessing(false);
@@ -268,81 +228,76 @@ export default function CheckoutPage() {
                 <div className={styles.inputGroup}><label htmlFor="lastName">Sobrenome</label><input type="text" name="lastName" value={shippingAddress.lastName} onChange={handleAddressChange} required /></div>
               </div>
               <div className={styles.cepGroup}>
-                <div className={styles.inputGroup}><label htmlFor="cep">CEP</label><input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} required /></div>
-                <button type="button" onClick={handleCepLookup} disabled={loadingCep} className={styles.cepButton}>{loadingCep ? 'Buscando...' : 'Buscar CEP'}</button>
+                <div className={styles.inputGroup}><label htmlFor="cep">CEP</label><input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} placeholder="00000-000" required /></div>
+                <button type="button" onClick={handleCepLookup} disabled={loadingCep}>{loadingCep ? 'Buscando...' : 'Buscar Frete'}</button>
               </div>
               <div className={styles.inputGroup}><label htmlFor="address">Endereço</label><input type="text" name="address" value={shippingAddress.address} onChange={handleAddressChange} required /></div>
               <div className={styles.formGrid}>
                 <div className={styles.inputGroup}><label htmlFor="number">Número</label><input type="text" name="number" value={shippingAddress.number} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="complement">Complemento (Opcional)</label><input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} /></div>
+                <div className={styles.inputGroup}><label htmlFor="complement">Complemento (opcional)</label><input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} /></div>
               </div>
               <div className={styles.inputGroup}><label htmlFor="neighborhood">Bairro</label><input type="text" name="neighborhood" value={shippingAddress.neighborhood} onChange={handleAddressChange} required /></div>
               <div className={styles.formGrid}>
                 <div className={styles.inputGroup}><label htmlFor="city">Cidade</label><input type="text" name="city" value={shippingAddress.city} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="state">Estado</label><input type="text" name="state" value={shippingAddress.state} onChange={handleAddressChange} required /></div>
+                <div className={styles.inputGroup}><label htmlFor="state">Estado</label><select name="state" value={shippingAddress.state} onChange={handleAddressChange} required><option value="SP">São Paulo</option><option value="RJ">Rio de Janeiro</option><option value="MG">Minas Gerais</option><option value="BA">Bahia</option></select></div>
               </div>
             </div>
-
-            <div className={styles.formSection}>
-              <h2>Opções de Envio</h2>
-              {shippingOptions.length > 0 ? (
-                <div className={styles.shippingOptions}>
-                  {shippingOptions.map(option => (
-                    <label key={option.id} className={styles.shippingOption}>
-                      <input type="radio" name="shipping" checked={selectedShipping?.id === option.id} onChange={() => setSelectedShipping(option)} />
-                      <span>{option.name} - R$ {option.price.toFixed(2)} ({option.delivery})</span>
-                    </label>
-                  ))}
-                </div>
-              ) : (
-                <p>Preencha o CEP para calcular o frete.</p>
-              )}
-            </div>
-
-            <div className={styles.formSection}>
-              <h2>Método de Pagamento</h2>
-              <div className={styles.paymentMethods}>
-                <button type="button" className={`${styles.paymentButton} ${paymentMethod === 'card' ? styles.active : ''}`} onClick={() => setPaymentMethod('card')}><FiCreditCard /> Cartão de Crédito</button>
-                <button type="button" className={`${styles.paymentButton} ${paymentMethod === 'pix' ? styles.active : ''}`} onClick={() => setPaymentMethod('pix')}><FiSmartphone /> PIX</button>
+            {shippingOptions.length > 0 && (
+              <div className={styles.formSection}>
+                <h2>Método de Envio</h2>
+                {shippingOptions.map(opt => (
+                  <div key={opt.id} className={`${styles.shippingOption} ${selectedShipping?.id === opt.id ? styles.selected : ''}`} onClick={() => setSelectedShipping(opt)}>
+                    <input type="radio" checked={selectedShipping?.id === opt.id} readOnly />
+                    <div className={styles.shippingDetails}><span>{opt.name}</span><small>{opt.delivery}</small></div>
+                    <span className={styles.shippingPrice}>R$ {opt.price.toFixed(2).replace('.', ',')}</span>
+                  </div>
+                ))}
               </div>
-
+            )}
+            <div className={styles.formSection}>
+              <h2>Pagamento</h2>
+              <div className={styles.paymentTabs}>
+                <button type="button" className={paymentMethod === 'card' ? styles.activeTab : ''} onClick={() => setPaymentMethod('card')}><FiCreditCard /> Cartão de Crédito</button>
+                <button type="button" className={paymentMethod === 'pix' ? styles.activeTab : ''} onClick={() => setPaymentMethod('pix')}><FiSmartphone /> Pix</button>
+              </div>
               {paymentMethod === 'card' && (
-                <div className={styles.cardFormContainer}>
+                <div className={styles.paymentContent}>
+                  <div className={styles.inputGroup}><label>Número do Cartão</label><div id="form-checkout__cardNumber" className={styles.mpInput}></div></div>
                   <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label htmlFor="form-checkout__cardholderName">Nome no Cartão</label><div id="form-checkout__cardholderName" className={styles.mpInput}></div></div>
-                    <div className={styles.inputGroup}><label htmlFor="form-checkout__identificationType">Tipo Doc.</label><div id="form-checkout__identificationType" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label>Validade</label><div id="form-checkout__expirationDate" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label>CVV</label><div id="form-checkout__securityCode" className={styles.mpInput}></div></div>
                   </div>
-                  <div className={styles.inputGroup}><label htmlFor="form-checkout__identificationNumber">Número do Documento</label><div id="form-checkout__identificationNumber" className={styles.mpInput}></div></div>
-                  <div className={styles.inputGroup}><label htmlFor="form-checkout__cardNumber">Número do Cartão</label><div id="form-checkout__cardNumber" className={styles.mpInput}></div></div>
+                  <div className={styles.inputGroup}><label>Nome no Cartão</label><input type="text" id="form-checkout__cardholderName" /></div>
                   <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label htmlFor="form-checkout__expirationDate">Vencimento</label><div id="form-checkout__expirationDate" className={styles.mpInput}></div></div>
-                    <div className={styles.inputGroup}><label htmlFor="form-checkout__securityCode">CVC</label><div id="form-checkout__securityCode" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label>Tipo de Documento</label><select id="form-checkout__identificationType"></select></div>
+                    <div className={styles.inputGroup}><label>Número do Documento</label><input type="text" id="form-checkout__identificationNumber" /></div>
                   </div>
-                  <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label htmlFor="form-checkout__issuer">Bandeira</label><div id="form-checkout__issuer" className={styles.mpInput}></div></div>
-                    <div className={styles.inputGroup}><label htmlFor="form-checkout__installments">Parcelas</label><div id="form-checkout__installments" className={styles.mpInput}></div></div>
-                  </div>
+                   <div className={styles.inputGroup}><label>Parcelas</label><select id="form-checkout__installments"></select></div>
+                   <select id="form-checkout__issuer" style={{ display: 'none' }}></select>
                 </div>
               )}
+              {paymentMethod === 'pix' && (<div className={styles.paymentContent + ' ' + styles.pixContent}><p>Um QR Code para pagamento será gerado na próxima tela.</p></div>)}
             </div>
-
-            <div className={styles.summary}>
-              <h3>Resumo do Pedido</h3>
-              <p>Subtotal: R$ {subtotal.toFixed(2)}</p>
-              <p>Frete: R$ {selectedShipping ? selectedShipping.price.toFixed(2) : '0.00'}</p>
-              <p className={styles.total}>Total: R$ {total.toFixed(2)}</p>
-            </div>
-
-            {paymentError && <p className={styles.error}>{paymentError}</p>}
-
-            <button type="submit" className={styles.submitButton} disabled={isProcessing || !selectedShipping}>
-              {isProcessing ? 'Processando...' : `Pagar R$ ${total.toFixed(2)}`}
-            </button>
-            <p className={styles.secure}><FiLock /> Transação Segura</p>
+            {paymentError && <p className={styles.errorText}>{paymentError}</p>}
+            <button type="submit" className={styles.submitButton} disabled={isProcessing || !selectedShipping}><FiLock /> {isProcessing ? 'Processando...' : `Pagar Agora (R$ ${total.toFixed(2).replace('.', ',')})`}</button>
           </form>
         </div>
-        <div className={styles.cartColumn}>
-          {/* Conteúdo do carrinho aqui, se necessário */}
+        <div className={styles.summaryColumn}>
+          <div className={styles.summaryContent}>
+            <h2>Resumo do Pedido</h2>
+            <div className={styles.summaryItems}>
+              {cartItems.map(item => (
+                <div key={item.id} className={styles.summaryItem}>
+                  <div className={styles.itemImage}><Image src={item.image} alt={item.name} width={64} height={64} /><span className={styles.itemQuantity}>{item.quantity}</span></div>
+                  <div className={styles.itemName}>{item.name}</div>
+                  <div className={styles.itemPrice}>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</div>
+                </div>
+              ))}
+            </div>
+            <div className={styles.summaryLine}><span>Subtotal</span><span>R$ {subtotal.toFixed(2).replace('.', ',')}</span></div>
+            <div className={styles.summaryLine}><span>Frete</span><span>{selectedShipping ? `R$ ${selectedShipping.price.toFixed(2).replace('.', ',')}` : 'A calcular'}</span></div>
+            <div className={styles.summaryTotal}><span>Total</span><span>R$ {total.toFixed(2).replace('.', ',')}</span></div>
+          </div>
         </div>
       </div>
     </main>
