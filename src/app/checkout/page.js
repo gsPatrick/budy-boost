@@ -10,6 +10,7 @@ import { FiLock, FiCreditCard, FiSmartphone, FiDollarSign, FiCopy } from 'react-
 import styles from './checkout.module.css';
 
 let mpInstance;
+let cardFormInstance; // Variável para armazenar a instância do cardForm
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -31,6 +32,7 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.MercadoPago) {
+      // ATENÇÃO: Use sua chave pública real
       const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
       mpInstance = new window.MercadoPago(publicKey);
       console.log('✅ Mercado Pago SDK inicializado');
@@ -49,9 +51,13 @@ export default function CheckoutPage() {
   const total = subtotal + (selectedShipping?.price || 0);
 
   useEffect(() => {
-    let cardForm;
     if (mpInstance && paymentMethod === 'card') {
-      cardForm = mpInstance.cardForm({
+      // Desmonta a instância anterior se existir
+      if (cardFormInstance) {
+        cardFormInstance.unmount();
+      }
+
+      cardFormInstance = mpInstance.cardForm({
         amount: String(total.toFixed(2)),
         iframe: true,
         form: {
@@ -84,8 +90,8 @@ export default function CheckoutPage() {
       });
     }
     return () => {
-      if (cardForm) {
-        cardForm.unmount();
+      if (cardFormInstance) {
+        cardFormInstance.unmount();
       }
     };
   }, [paymentMethod, total]);
@@ -154,55 +160,33 @@ export default function CheckoutPage() {
       console.log('✅ Pedido criado:', pedidoId);
 
       if (paymentMethod === 'card' || paymentMethod === 'debit') {
-        if (!mpInstance) throw new Error("O SDK do Mercado Pago não foi inicializado.");
+        if (!mpInstance || !cardFormInstance) throw new Error("O SDK do Mercado Pago não foi inicializado ou o formulário não foi montado.");
 
-        console.log('💳 Coletando dados do cartão...');
-        const cardholderName = document.getElementById('form-checkout__cardholderName').value;
-        const identificationType = document.getElementById('form-checkout__identificationType').value;
-        const identificationNumber = document.getElementById('form-checkout__identificationNumber').value;
-        const issuerId = document.getElementById('form-checkout__issuer').value;
-        const installments = parseInt(document.getElementById('form-checkout__installments').value);
+        console.log('🔐 Criando token do cartão e coletando dados...');
+        
+        // CORREÇÃO CRÍTICA: Usar a função de submissão do CardForm para obter o token e os dados validados
+        const cardFormData = await cardFormInstance.getCardFormData();
+        
+        const {
+          token,
+          paymentMethodId,
+          issuerId,
+          installments,
+          identificationNumber,
+          identificationType,
+        } = cardFormData;
 
-        console.log('🔐 Criando token do cartão...');
-        const cardToken = await mpInstance.createCardToken({
-          cardholderName: cardholderName,
-          identificationType: identificationType,
-          identificationNumber: identificationNumber,
-        });
+        if (!token) throw new Error("Não foi possível validar seu cartão. Verifique os dados e tente novamente.");
+        
+        console.log('✅ Token criado:', token);
+        console.log('🔍 Dados do cartão validados:', cardFormData);
 
-        if (!cardToken?.id) throw new Error("Não foi possível validar seu cartão. Verifique os dados.");
-        console.log('✅ Token criado:', cardToken.id);
-        console.log('🔍 Token completo:', cardToken);
-
-        // CORREÇÃO: Detectar payment_method_id
-        let paymentMethodId = null;
-
-        // Tentar pegar do token (algumas versões do SDK retornam)
-        if (cardToken.payment_method_id) {
-          paymentMethodId = cardToken.payment_method_id;
-          console.log('✅ Payment Method do token:', paymentMethodId);
-        } 
-        // Tentar detectar pela primeira dígito do cartão (fallback)
-        else {
-          const cardNumberInput = document.querySelector('#form-checkout__cardNumber input');
-          const firstDigit = cardNumberInput?.value?.replace(/\s/g, '').charAt(0);
-          
-          if (firstDigit === '4') paymentMethodId = 'visa';
-          else if (firstDigit === '5') paymentMethodId = 'master';
-          else if (firstDigit === '3') paymentMethodId = 'amex';
-          else if (firstDigit === '6') paymentMethodId = 'elo';
-          else paymentMethodId = 'visa'; // fallback padrão
-          
-          console.log('⚠️ Payment Method detectado por fallback (primeiro dígito):', paymentMethodId);
-        }
-
-        console.log('💳 Bandeira final:', paymentMethodId);
-
+        // O paymentMethodId e issuerId agora vêm validados do SDK
         const paymentData = {
           payment_method_id: paymentMethodId,
           payment_method: 'card',
           pedidoId: pedidoId,
-          token: cardToken.id,
+          token: token,
           issuer_id: issuerId,
           installments: installments,
           transaction_amount: parseFloat(total.toFixed(2)),
@@ -284,76 +268,81 @@ export default function CheckoutPage() {
                 <div className={styles.inputGroup}><label htmlFor="lastName">Sobrenome</label><input type="text" name="lastName" value={shippingAddress.lastName} onChange={handleAddressChange} required /></div>
               </div>
               <div className={styles.cepGroup}>
-                <div className={styles.inputGroup}><label htmlFor="cep">CEP</label><input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} placeholder="00000-000" required /></div>
-                <button type="button" onClick={handleCepLookup} disabled={loadingCep}>{loadingCep ? 'Buscando...' : 'Buscar Frete'}</button>
+                <div className={styles.inputGroup}><label htmlFor="cep">CEP</label><input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} required /></div>
+                <button type="button" onClick={handleCepLookup} disabled={loadingCep} className={styles.cepButton}>{loadingCep ? 'Buscando...' : 'Buscar CEP'}</button>
               </div>
               <div className={styles.inputGroup}><label htmlFor="address">Endereço</label><input type="text" name="address" value={shippingAddress.address} onChange={handleAddressChange} required /></div>
               <div className={styles.formGrid}>
                 <div className={styles.inputGroup}><label htmlFor="number">Número</label><input type="text" name="number" value={shippingAddress.number} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="complement">Complemento (opcional)</label><input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} /></div>
+                <div className={styles.inputGroup}><label htmlFor="complement">Complemento (Opcional)</label><input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} /></div>
               </div>
               <div className={styles.inputGroup}><label htmlFor="neighborhood">Bairro</label><input type="text" name="neighborhood" value={shippingAddress.neighborhood} onChange={handleAddressChange} required /></div>
               <div className={styles.formGrid}>
                 <div className={styles.inputGroup}><label htmlFor="city">Cidade</label><input type="text" name="city" value={shippingAddress.city} onChange={handleAddressChange} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="state">Estado</label><select name="state" value={shippingAddress.state} onChange={handleAddressChange} required><option value="SP">São Paulo</option><option value="RJ">Rio de Janeiro</option><option value="MG">Minas Gerais</option></select></div>
+                <div className={styles.inputGroup}><label htmlFor="state">Estado</label><input type="text" name="state" value={shippingAddress.state} onChange={handleAddressChange} required /></div>
               </div>
             </div>
-            {shippingOptions.length > 0 && (
-              <div className={styles.formSection}>
-                <h2>Método de Envio</h2>
-                {shippingOptions.map(opt => (
-                  <div key={opt.id} className={`${styles.shippingOption} ${selectedShipping?.id === opt.id ? styles.selected : ''}`} onClick={() => setSelectedShipping(opt)}>
-                    <input type="radio" checked={selectedShipping?.id === opt.id} readOnly />
-                    <div className={styles.shippingDetails}><span>{opt.name}</span><small>{opt.delivery}</small></div>
-                    <span className={styles.shippingPrice}>R$ {opt.price.toFixed(2).replace('.', ',')}</span>
-                  </div>
-                ))}
-              </div>
-            )}
+
             <div className={styles.formSection}>
-              <h2>Pagamento</h2>
-              <div className={styles.paymentTabs}>
-                <button type="button" className={paymentMethod === 'card' ? styles.activeTab : ''} onClick={() => setPaymentMethod('card')}><FiCreditCard /> Cartão de Crédito</button>
-                <button type="button" className={paymentMethod === 'pix' ? styles.activeTab : ''} onClick={() => setPaymentMethod('pix')}><FiSmartphone /> Pix</button>
+              <h2>Opções de Envio</h2>
+              {shippingOptions.length > 0 ? (
+                <div className={styles.shippingOptions}>
+                  {shippingOptions.map(option => (
+                    <label key={option.id} className={styles.shippingOption}>
+                      <input type="radio" name="shipping" checked={selectedShipping?.id === option.id} onChange={() => setSelectedShipping(option)} />
+                      <span>{option.name} - R$ {option.price.toFixed(2)} ({option.delivery})</span>
+                    </label>
+                  ))}
+                </div>
+              ) : (
+                <p>Preencha o CEP para calcular o frete.</p>
+              )}
+            </div>
+
+            <div className={styles.formSection}>
+              <h2>Método de Pagamento</h2>
+              <div className={styles.paymentMethods}>
+                <button type="button" className={`${styles.paymentButton} ${paymentMethod === 'card' ? styles.active : ''}`} onClick={() => setPaymentMethod('card')}><FiCreditCard /> Cartão de Crédito</button>
+                <button type="button" className={`${styles.paymentButton} ${paymentMethod === 'pix' ? styles.active : ''}`} onClick={() => setPaymentMethod('pix')}><FiSmartphone /> PIX</button>
               </div>
+
               {paymentMethod === 'card' && (
-                <div className={styles.paymentContent}>
-                  <div className={styles.inputGroup}><label>Número do Cartão</label><div id="form-checkout__cardNumber" className={styles.mpInput}></div></div>
+                <div className={styles.cardFormContainer}>
                   <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label>Validade</label><div id="form-checkout__expirationDate" className={styles.mpInput}></div></div>
-                    <div className={styles.inputGroup}><label>CVV</label><div id="form-checkout__securityCode" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label htmlFor="form-checkout__cardholderName">Nome no Cartão</label><div id="form-checkout__cardholderName" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label htmlFor="form-checkout__identificationType">Tipo Doc.</label><div id="form-checkout__identificationType" className={styles.mpInput}></div></div>
                   </div>
-                  <div className={styles.inputGroup}><label>Nome no Cartão</label><input id="form-checkout__cardholderName" type="text" /></div>
+                  <div className={styles.inputGroup}><label htmlFor="form-checkout__identificationNumber">Número do Documento</label><div id="form-checkout__identificationNumber" className={styles.mpInput}></div></div>
+                  <div className={styles.inputGroup}><label htmlFor="form-checkout__cardNumber">Número do Cartão</label><div id="form-checkout__cardNumber" className={styles.mpInput}></div></div>
                   <div className={styles.formGrid}>
-                    <div className={styles.inputGroup}><label>Tipo de Documento</label><select id="form-checkout__identificationType"></select></div>
-                    <div className={styles.inputGroup}><label>Número do Documento</label><input id="form-checkout__identificationNumber" type="text" /></div>
+                    <div className={styles.inputGroup}><label htmlFor="form-checkout__expirationDate">Vencimento</label><div id="form-checkout__expirationDate" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label htmlFor="form-checkout__securityCode">CVC</label><div id="form-checkout__securityCode" className={styles.mpInput}></div></div>
                   </div>
-                   <div className={styles.inputGroup}><label>Parcelas</label><select id="form-checkout__installments"></select></div>
-                   <select id="form-checkout__issuer" style={{ display: 'none' }}></select>
+                  <div className={styles.formGrid}>
+                    <div className={styles.inputGroup}><label htmlFor="form-checkout__issuer">Bandeira</label><div id="form-checkout__issuer" className={styles.mpInput}></div></div>
+                    <div className={styles.inputGroup}><label htmlFor="form-checkout__installments">Parcelas</label><div id="form-checkout__installments" className={styles.mpInput}></div></div>
+                  </div>
                 </div>
               )}
-              {paymentMethod === 'pix' && (<div className={styles.paymentContent + ' ' + styles.pixContent}><p>Um QR Code para pagamento será gerado na próxima tela.</p></div>)}
             </div>
-            {paymentError && <p className={styles.errorText}>{paymentError}</p>}
-            <button type="submit" className={styles.submitButton} disabled={isProcessing || !selectedShipping}><FiLock /> {isProcessing ? 'Processando...' : `Pagar Agora (R$ ${total.toFixed(2).replace('.', ',')})`}</button>
+
+            <div className={styles.summary}>
+              <h3>Resumo do Pedido</h3>
+              <p>Subtotal: R$ {subtotal.toFixed(2)}</p>
+              <p>Frete: R$ {selectedShipping ? selectedShipping.price.toFixed(2) : '0.00'}</p>
+              <p className={styles.total}>Total: R$ {total.toFixed(2)}</p>
+            </div>
+
+            {paymentError && <p className={styles.error}>{paymentError}</p>}
+
+            <button type="submit" className={styles.submitButton} disabled={isProcessing || !selectedShipping}>
+              {isProcessing ? 'Processando...' : `Pagar R$ ${total.toFixed(2)}`}
+            </button>
+            <p className={styles.secure}><FiLock /> Transação Segura</p>
           </form>
         </div>
-        <div className={styles.summaryColumn}>
-          <div className={styles.summaryContent}>
-            <h2>Resumo do Pedido</h2>
-            <div className={styles.summaryItems}>
-              {cartItems.map(item => (
-                <div key={item.id} className={styles.summaryItem}>
-                  <div className={styles.itemImage}><Image src={item.image} alt={item.name} width={64} height={64} /><span className={styles.itemQuantity}>{item.quantity}</span></div>
-                  <div className={styles.itemName}>{item.name}</div>
-                  <div className={styles.itemPrice}>R$ {(item.price * item.quantity).toFixed(2).replace('.', ',')}</div>
-                </div>
-              ))}
-            </div>
-            <div className={styles.summaryLine}><span>Subtotal</span><span>R$ {subtotal.toFixed(2).replace('.', ',')}</span></div>
-            <div className={styles.summaryLine}><span>Frete</span><span>{selectedShipping ? `R$ ${selectedShipping.price.toFixed(2).replace('.', ',')}` : 'A calcular'}</span></div>
-            <div className={styles.summaryTotal}><span>Total</span><span>R$ {total.toFixed(2).replace('.', ',')}</span></div>
-          </div>
+        <div className={styles.cartColumn}>
+          {/* Conteúdo do carrinho aqui, se necessário */}
         </div>
       </div>
     </main>
