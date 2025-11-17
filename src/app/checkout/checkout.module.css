@@ -327,3 +327,43 @@
     margin-bottom: 2rem;
   }
 }
+
+/* Adicione ao final de /app/checkout/checkout.module.css */
+
+/* Estilização do container do Brick para garantir que ele se expanda */
+#cardPaymentBrick_container {
+  width: 100%;
+}
+
+/* 
+  O Brick injeta suas próprias classes. Nós podemos sobrescrevê-las.
+  Estes seletores são baseados na estrutura atual do Brick e podem precisar
+  de ajuste se o Mercado Pago mudar as classes.
+*/
+
+/* Estilizando o botão de pagamento DENTRO do Brick */
+.mp-bricks-form-submit-button {
+  background-color: #1A234B !important;
+  color: white !important;
+  padding: 1.2rem !important;
+  border-radius: 8px !important;
+  font-size: 1.2rem !important;
+  font-weight: 700 !important;
+  width: 100% !important;
+  margin-top: 1.5rem !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0.8rem !important;
+}
+
+.mp-bricks-form-submit-button:disabled {
+  background-color: #9ca3af !important;
+}
+
+/* Melhorando a aparência do seletor de parcelas */
+.mp-bricks-form__select-container {
+  border: 1px solid #ccc !important;
+  border-radius: 8px !important;
+  height: 48px !important;
+}
