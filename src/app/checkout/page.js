@@ -14,9 +14,8 @@ export default function CheckoutPage() {
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estados do formulário e UI
   const [email, setEmail] = useState('');
-  const [cpf, setCpf] = useState('');
+  const [cpf, setCpf] = useState(''); // Estado para o CPF
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
     complement: '', neighborhood: '', city: '', state: 'SP',
@@ -29,14 +28,12 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
-  // Efeito para preencher o e-mail do usuário logado
   useEffect(() => {
     if (user && user.email) {
       setEmail(user.email);
     }
   }, [user]);
 
-  // Efeito para redirecionar se o carrinho estiver vazio
   useEffect(() => {
     const timer = setTimeout(() => {
       if (cartItemCount === 0) {
@@ -48,7 +45,6 @@ export default function CheckoutPage() {
 
   const total = subtotal + (selectedShipping?.price || 0);
 
-  // Função reutilizável para criar o pedido no backend
   const createOrder = async () => {
     if (!selectedShipping) {
       throw new Error("Por favor, calcule e selecione um método de frete.");
@@ -61,17 +57,13 @@ export default function CheckoutPage() {
     return pedidoResponse.data.id;
   };
 
-  // Efeito para inicializar e destruir o Payment Brick
   useEffect(() => {
     let brickController;
-
     const initBrick = async () => {
       if (paymentMethod === 'card' && total > 0 && typeof window !== 'undefined' && window.MercadoPago) {
         try {
           const container = document.getElementById('cardPaymentBrick_container');
-          if (container.innerHTML !== '') {
-            container.innerHTML = '';
-          }
+          if (container.innerHTML !== '') container.innerHTML = '';
 
           const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
           const mp = new window.MercadoPago(publicKey);
@@ -80,26 +72,20 @@ export default function CheckoutPage() {
           const settings = {
             initialization: {
               amount: total,
-              payer: {
-                email: email || undefined,
-              },
+              payer: { email: email || undefined },
             },
-            customization: {
-              visual: { style: { theme: 'default' } },
-              paymentMethods: { creditCard: "all", debitCard: "all" },
-            },
+            customization: { visual: { style: { theme: 'default' } } },
             callbacks: {
               onReady: () => {},
               onError: (error) => {
                 console.error("[BRICK ERROR]", error);
-                setPaymentError("Erro ao processar dados do cartão. Verifique os campos.");
+                setPaymentError("Erro ao processar dados do cartão.");
               },
               onSubmit: async (formData) => {
                 setIsProcessing(true);
                 setPaymentError(null);
                 try {
                   const pedidoId = await createOrder();
-
                   const paymentPayload = {
                     payment_method: 'card',
                     pedidoId: pedidoId,
@@ -112,9 +98,7 @@ export default function CheckoutPage() {
                       identification: formData.payer.identification,
                     },
                   };
-
                   const paymentResponse = await ApiService.post('/pagamentos/processar', paymentPayload);
-
                   if (paymentResponse.data.status === 'approved') {
                     clearCart();
                     router.push(`/compra-confirmada?pedido=${pedidoId}`);
@@ -128,21 +112,12 @@ export default function CheckoutPage() {
               },
             },
           };
-
           brickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', settings);
-        } catch (error) {
-          console.error("Falha ao inicializar o Payment Brick:", error);
-        }
+        } catch (error) { console.error("Falha ao inicializar o Payment Brick:", error); }
       }
     };
-
     initBrick();
-
-    return () => {
-      if (brickController) {
-        brickController.unmount();
-      }
-    };
+    return () => { if (brickController) brickController.unmount(); };
   }, [paymentMethod, total, email]);
 
   const handleAddressChange = (e) => {
@@ -160,7 +135,6 @@ export default function CheckoutPage() {
       if (!data.erro) {
         setShippingAddress(prev => ({ ...prev, address: data.logradouro, neighborhood: data.bairro, city: data.localidade, state: data.uf, }));
       } else { alert("CEP não encontrado."); }
-      
       const freteFixo = [{ id: 'frete_fixo_nacional', name: 'Frete Fixo (Brasil)', price: 9.90, delivery: 'Em até 7 dias úteis' }];
       setShippingOptions(freteFixo);
       setSelectedShipping(freteFixo[0]);
@@ -177,6 +151,7 @@ export default function CheckoutPage() {
     alert('Código Pix Copiado!');
   };
 
+  // --- FUNÇÃO CORRIGIDA PARA O PIX ---
   const handlePixSubmit = async () => {
     if (isProcessing || !selectedShipping) {
       if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
@@ -190,6 +165,8 @@ export default function CheckoutPage() {
     setPaymentError(null);
     try {
       const pedidoId = await createOrder();
+      
+      // --- CORREÇÃO APLICADA AQUI: Enviando o objeto 'payer' com o CPF ---
       const pixResponse = await ApiService.post('/pagamentos/processar', {
         payment_method: 'pix',
         pedidoId: pedidoId,
