@@ -16,6 +16,7 @@ export default function CheckoutPage() {
 
   // Estados do formulário e UI
   const [email, setEmail] = useState('');
+  const [cpf, setCpf] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
     complement: '', neighborhood: '', city: '', state: 'SP',
@@ -46,6 +47,19 @@ export default function CheckoutPage() {
   }, [cartItemCount, router]);
 
   const total = subtotal + (selectedShipping?.price || 0);
+
+  // Função reutilizável para criar o pedido no backend
+  const createOrder = async () => {
+    if (!selectedShipping) {
+      throw new Error("Por favor, calcule e selecione um método de frete.");
+    }
+    const pedidoResponse = await ApiService.post('/pedidos', {
+      itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
+      enderecoEntrega: shippingAddress,
+      freteId: selectedShipping.id,
+    });
+    return pedidoResponse.data.id;
+  };
 
   // Efeito para inicializar e destruir o Payment Brick
   useEffect(() => {
@@ -131,18 +145,6 @@ export default function CheckoutPage() {
     };
   }, [paymentMethod, total, email]);
 
-  const createOrder = async () => {
-    if (!selectedShipping) {
-      throw new Error("Por favor, calcule e selecione um método de frete.");
-    }
-    const pedidoResponse = await ApiService.post('/pedidos', {
-      itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
-      enderecoEntrega: shippingAddress,
-      freteId: selectedShipping.id,
-    });
-    return pedidoResponse.data.id;
-  };
-
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
     setShippingAddress(prev => ({ ...prev, [name]: value }));
@@ -180,6 +182,10 @@ export default function CheckoutPage() {
       if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
       return;
     }
+    if (!cpf.replace(/\D/g, '')) {
+      setPaymentError("Por favor, preencha seu CPF para gerar o Pix.");
+      return;
+    }
     setIsProcessing(true);
     setPaymentError(null);
     try {
@@ -187,13 +193,18 @@ export default function CheckoutPage() {
       const pixResponse = await ApiService.post('/pagamentos/processar', {
         payment_method: 'pix',
         pedidoId: pedidoId,
+        payer: {
+          identification: {
+            type: 'CPF',
+            number: cpf,
+          }
+        }
       });
       setPixData(pixResponse.data);
     } catch (error) {
       console.error("Erro ao gerar PIX:", error);
       setPaymentError(error.message || "Ocorreu um erro inesperado.");
     } finally {
-      // No caso do Pix, o processamento termina ao exibir o QR Code, então desativamos o overlay
       setIsProcessing(false);
     }
   };
@@ -267,7 +278,13 @@ export default function CheckoutPage() {
               {paymentMethod === 'card' && (<div id="cardPaymentBrick_container"></div>)}
               {paymentMethod === 'pix' && (
                 <>
-                  <div className={styles.paymentContent + ' ' + styles.pixContent}><p>Um QR Code para pagamento será gerado ao clicar no botão abaixo.</p></div>
+                  <div className={styles.paymentContent}>
+                    <div className={styles.inputGroup}>
+                      <label htmlFor="pix_cpf">CPF do pagador</label>
+                      <input type="text" id="pix_cpf" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" required />
+                    </div>
+                    <div className={styles.pixContent}><p>Um QR Code para pagamento será gerado ao clicar no botão abaixo.</p></div>
+                  </div>
                   <button type="button" onClick={handlePixSubmit} className={styles.submitButton} disabled={isProcessing || !selectedShipping}><FiLock /> {isProcessing ? 'Gerando Pix...' : `Gerar QR Code Pix (R$ ${total.toFixed(2).replace('.', ',')})`}</button>
                 </>
               )}
