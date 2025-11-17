@@ -14,7 +14,6 @@ export default function CheckoutPage() {
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estados do formulário e UI
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -28,40 +27,48 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
-  // Efeito para preencher o e-mail do usuário logado
   useEffect(() => {
     if (user && user.email) {
       setEmail(user.email);
     }
   }, [user]);
 
-  // Efeito para redirecionar se o carrinho estiver vazio
   useEffect(() => {
-    // Adiciona um pequeno delay para garantir que o estado do carrinho foi inicializado do localStorage
     const timer = setTimeout(() => {
-        if (cartItemCount === 0) {
-            console.log("[DEBUG] Carrinho vazio, redirecionando para /loja...");
-            router.push('/loja');
-        }
+      if (cartItemCount === 0) {
+        router.push('/loja');
+      }
     }, 500);
     return () => clearTimeout(timer);
   }, [cartItemCount, router]);
 
   const total = subtotal + (selectedShipping?.price || 0);
 
+  // --- NOVA FUNÇÃO REUTILIZÁVEL PARA CRIAR O PEDIDO ---
+  const createOrder = async () => {
+    if (!selectedShipping) {
+      throw new Error("Por favor, calcule e selecione um método de frete.");
+    }
+    console.log("[DEBUG] [API] 1. Criando pedido no backend...");
+    const pedidoResponse = await ApiService.post('/pedidos', {
+      itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
+      enderecoEntrega: shippingAddress,
+      freteId: selectedShipping.id,
+    });
+    const pedidoId = pedidoResponse.data.id;
+    console.log("[DEBUG] [API] Pedido criado com sucesso. ID:", pedidoId);
+    return pedidoId;
+  };
+
   // Efeito para inicializar e destruir o Payment Brick
   useEffect(() => {
     let brickController;
 
     const initBrick = async () => {
-      // Condições para renderizar o Brick
       if (paymentMethod === 'card' && total > 0 && typeof window !== 'undefined' && window.MercadoPago) {
         try {
-          // Limpa qualquer instância anterior para evitar duplicatas
           const container = document.getElementById('cardPaymentBrick_container');
-          if (container.innerHTML !== '') {
-            container.innerHTML = '';
-          }
+          if (container.innerHTML !== '') container.innerHTML = '';
 
           const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
           const mp = new window.MercadoPago(publicKey);
@@ -70,34 +77,20 @@ export default function CheckoutPage() {
           const settings = {
             initialization: {
               amount: total,
-              // Garante que o payer.email seja passado, crucial para evitar erros de token
-              payer: {
-                email: email || undefined,
-              },
+              payer: { email: email || undefined },
             },
-            customization: {
-              visual: { style: { theme: 'default' } },
-              paymentMethods: { creditCard: "all", debitCard: "all" },
-            },
+            customization: { visual: { style: { theme: 'default' } } },
             callbacks: {
-              onReady: () => {
-                console.log("[DEBUG] [BRICK] Card Payment Brick está pronto.");
-              },
+              onReady: () => {},
               onError: (error) => {
-                console.error("[DEBUG] [BRICK] Erro no Brick:", error);
-                setPaymentError("Erro ao processar dados do cartão. Verifique os campos.");
+                console.error("[BRICK ERROR]", error);
+                setPaymentError("Erro ao processar dados do cartão.");
               },
               onSubmit: async (formData) => {
-                console.log("[DEBUG] [BRICK] Callback onSubmit acionado.");
                 setIsProcessing(true);
                 setPaymentError(null);
                 try {
-                  const pedidoResponse = await ApiService.post('/pedidos', {
-                    itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
-                    enderecoEntrega: shippingAddress,
-                    freteId: selectedShipping.id,
-                  });
-                  const pedidoId = pedidoResponse.data.id;
+                  const pedidoId = await createOrder(); // Usa a função reutilizável
 
                   const paymentPayload = {
                     payment_method: 'card',
@@ -130,20 +123,19 @@ export default function CheckoutPage() {
 
           brickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', settings);
         } catch (error) {
-          console.error("[DEBUG] Falha crítica ao inicializar o Payment Brick:", error);
+          console.error("Falha ao inicializar o Payment Brick:", error);
         }
       }
     };
 
     initBrick();
 
-    // Função de limpeza para desmontar o Brick
     return () => {
       if (brickController) {
         brickController.unmount();
       }
     };
-  }, [paymentMethod, total, email]); // Otimizado para recriar apenas quando necessário
+  }, [paymentMethod, total, email]); // Dependências otimizadas
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -177,6 +169,7 @@ export default function CheckoutPage() {
     alert('Código Pix Copiado!');
   };
 
+  // --- FUNÇÃO CORRIGIDA PARA O PIX ---
   const handlePixSubmit = async () => {
     if (isProcessing || !selectedShipping) {
       if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
@@ -185,12 +178,7 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     setPaymentError(null);
     try {
-      const pedidoResponse = await ApiService.post('/pedidos', {
-        itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
-        enderecoEntrega: shippingAddress,
-        freteId: selectedShipping.id,
-      });
-      const pedidoId = pedidoResponse.data.id;
+      const pedidoId = await createOrder(); // Usa a função reutilizável
 
       const pixResponse = await ApiService.post('/pagamentos/processar', {
         payment_method: 'pix',
@@ -257,13 +245,7 @@ export default function CheckoutPage() {
                 <button type="button" className={paymentMethod === 'card' ? styles.activeTab : ''} onClick={() => setPaymentMethod('card')}><FiCreditCard /> Cartão de Crédito</button>
                 <button type="button" className={paymentMethod === 'pix' ? styles.activeTab : ''} onClick={() => setPaymentMethod('pix')}><FiSmartphone /> Pix</button>
               </div>
-              
-              {paymentMethod === 'card' && (
-                <div id="cardPaymentBrick_container">
-                  {/* O Brick será renderizado aqui. O botão de submit faz parte do Brick. */}
-                </div>
-              )}
-
+              {paymentMethod === 'card' && (<div id="cardPaymentBrick_container"></div>)}
               {paymentMethod === 'pix' && (
                 <>
                   <div className={styles.paymentContent + ' ' + styles.pixContent}><p>Um QR Code para pagamento será gerado ao clicar no botão abaixo.</p></div>
@@ -271,7 +253,6 @@ export default function CheckoutPage() {
                 </>
               )}
             </div>
-            
             {paymentError && <p className={styles.errorText}>{paymentError}</p>}
           </form>
         </div>

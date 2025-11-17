@@ -1,0 +1,88 @@
+/* src/app/compra-confirmada/confirmation.module.css */
+
+.main {
+  background-color: #f8f9fa;
+  padding: 4rem 2rem;
+  min-height: 70vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.container {
+  max-width: 700px;
+  width: 100%;
+  background-color: white;
+  padding: 2.5rem;
+  border-radius: 15px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  text-align: center;
+}
+
+.statusBox {
+  display: flex;
+  text-align: left;
+  gap: 1.5rem;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 2.5rem;
+}
+
+.statusBox h2 {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.success {
+  background-color: #f0fdf4;
+  color: #15803d;
+}
+.pending {
+  background-color: #fefce8;
+  color: #a16207;
+}
+.failure {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.orderDetails {
+  border-top: 1px solid #e5e7eb;
+  padding-top: 2rem;
+  margin-bottom: 2.5rem;
+}
+.orderDetails h3 {
+  font-size: 1.2rem;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+}
+.summaryLine {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  color: #555;
+  font-weight: 500;
+}
+.summaryLine span:last-child {
+  font-weight: 700;
+  color: #1A234B;
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.linkButton, .primaryButton {
+  padding: 0.8rem 1.5rem;
+  border-radius: 50px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #ccc;
+}
+.primaryButton {
+  background-color: #1A234B;
+  color: white;
+  border-color: #1A234B;
+}
