@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
+  // Estados do formulário e UI
   const [email, setEmail] = useState('');
   const [shippingAddress, setShippingAddress] = useState({
     firstName: '', lastName: '', cep: '', address: '', number: '',
@@ -27,12 +28,14 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
+  // Efeito para preencher o e-mail do usuário logado
   useEffect(() => {
     if (user && user.email) {
       setEmail(user.email);
     }
   }, [user]);
 
+  // Efeito para redirecionar se o carrinho estiver vazio
   useEffect(() => {
     const timer = setTimeout(() => {
       if (cartItemCount === 0) {
@@ -44,22 +47,6 @@ export default function CheckoutPage() {
 
   const total = subtotal + (selectedShipping?.price || 0);
 
-  // --- NOVA FUNÇÃO REUTILIZÁVEL PARA CRIAR O PEDIDO ---
-  const createOrder = async () => {
-    if (!selectedShipping) {
-      throw new Error("Por favor, calcule e selecione um método de frete.");
-    }
-    console.log("[DEBUG] [API] 1. Criando pedido no backend...");
-    const pedidoResponse = await ApiService.post('/pedidos', {
-      itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
-      enderecoEntrega: shippingAddress,
-      freteId: selectedShipping.id,
-    });
-    const pedidoId = pedidoResponse.data.id;
-    console.log("[DEBUG] [API] Pedido criado com sucesso. ID:", pedidoId);
-    return pedidoId;
-  };
-
   // Efeito para inicializar e destruir o Payment Brick
   useEffect(() => {
     let brickController;
@@ -68,7 +55,9 @@ export default function CheckoutPage() {
       if (paymentMethod === 'card' && total > 0 && typeof window !== 'undefined' && window.MercadoPago) {
         try {
           const container = document.getElementById('cardPaymentBrick_container');
-          if (container.innerHTML !== '') container.innerHTML = '';
+          if (container.innerHTML !== '') {
+            container.innerHTML = '';
+          }
 
           const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
           const mp = new window.MercadoPago(publicKey);
@@ -77,20 +66,25 @@ export default function CheckoutPage() {
           const settings = {
             initialization: {
               amount: total,
-              payer: { email: email || undefined },
+              payer: {
+                email: email || undefined,
+              },
             },
-            customization: { visual: { style: { theme: 'default' } } },
+            customization: {
+              visual: { style: { theme: 'default' } },
+              paymentMethods: { creditCard: "all", debitCard: "all" },
+            },
             callbacks: {
               onReady: () => {},
               onError: (error) => {
                 console.error("[BRICK ERROR]", error);
-                setPaymentError("Erro ao processar dados do cartão.");
+                setPaymentError("Erro ao processar dados do cartão. Verifique os campos.");
               },
               onSubmit: async (formData) => {
                 setIsProcessing(true);
                 setPaymentError(null);
                 try {
-                  const pedidoId = await createOrder(); // Usa a função reutilizável
+                  const pedidoId = await createOrder();
 
                   const paymentPayload = {
                     payment_method: 'card',
@@ -135,7 +129,19 @@ export default function CheckoutPage() {
         brickController.unmount();
       }
     };
-  }, [paymentMethod, total, email]); // Dependências otimizadas
+  }, [paymentMethod, total, email]);
+
+  const createOrder = async () => {
+    if (!selectedShipping) {
+      throw new Error("Por favor, calcule e selecione um método de frete.");
+    }
+    const pedidoResponse = await ApiService.post('/pedidos', {
+      itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
+      enderecoEntrega: shippingAddress,
+      freteId: selectedShipping.id,
+    });
+    return pedidoResponse.data.id;
+  };
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -169,7 +175,6 @@ export default function CheckoutPage() {
     alert('Código Pix Copiado!');
   };
 
-  // --- FUNÇÃO CORRIGIDA PARA O PIX ---
   const handlePixSubmit = async () => {
     if (isProcessing || !selectedShipping) {
       if (!selectedShipping) setPaymentError("Por favor, calcule e selecione um método de frete.");
@@ -178,8 +183,7 @@ export default function CheckoutPage() {
     setIsProcessing(true);
     setPaymentError(null);
     try {
-      const pedidoId = await createOrder(); // Usa a função reutilizável
-
+      const pedidoId = await createOrder();
       const pixResponse = await ApiService.post('/pagamentos/processar', {
         payment_method: 'pix',
         pedidoId: pedidoId,
@@ -189,6 +193,7 @@ export default function CheckoutPage() {
       console.error("Erro ao gerar PIX:", error);
       setPaymentError(error.message || "Ocorreu um erro inesperado.");
     } finally {
+      // No caso do Pix, o processamento termina ao exibir o QR Code, então desativamos o overlay
       setIsProcessing(false);
     }
   };
@@ -210,11 +215,25 @@ export default function CheckoutPage() {
   }
 
   if (cartItemCount === 0) {
-    return <p>Seu carrinho está vazio. Redirecionando...</p>;
+    return (
+        <main className={styles.main}>
+            <div className={styles.processingOverlay}>
+                <div className={styles.spinner}></div>
+                <p>Seu carrinho está vazio. Redirecionando para a loja...</p>
+            </div>
+        </main>
+    );
   }
 
   return (
     <main className={styles.main}>
+      {isProcessing && (
+        <div className={styles.processingOverlay}>
+          <div className={styles.spinner}></div>
+          <p>Processando seu pagamento, por favor aguarde...</p>
+        </div>
+      )}
+
       <div className={styles.container}>
         <div className={styles.formColumn}>
           <form id="form-checkout">
