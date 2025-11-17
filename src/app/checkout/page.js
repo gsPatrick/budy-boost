@@ -14,15 +14,12 @@ export default function CheckoutPage() {
   const { cartItems, subtotal, cartItemCount, clearCart } = useCart();
   const { user } = useAuth();
 
-  // Estados unificados para dados do pagador
+  // Estados do formulário e UI
   const [email, setEmail] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [cpf, setCpf] = useState('');
-
-  // Outros estados da UI e do formulário
+  const [cpf, setCpf] = useState(''); // Estado unificado para o CPF do Pix
   const [shippingAddress, setShippingAddress] = useState({
-    cep: '', address: '', number: '', complement: '', neighborhood: '', city: '', state: 'SP',
+    firstName: '', lastName: '', cep: '', address: '', number: '',
+    complement: '', neighborhood: '', city: '', state: 'SP',
   });
   const [shippingOptions, setShippingOptions] = useState([]);
   const [selectedShipping, setSelectedShipping] = useState(null);
@@ -32,13 +29,10 @@ export default function CheckoutPage() {
   const [paymentError, setPaymentError] = useState(null);
   const [pixData, setPixData] = useState(null);
 
-  // Efeito para preencher dados do usuário logado
+  // Efeito para preencher o e-mail do usuário logado
   useEffect(() => {
-    if (user) {
-      setEmail(user.email || '');
-      const nameParts = user.nome ? user.nome.split(' ') : [];
-      setFirstName(nameParts[0] || '');
-      setLastName(nameParts.slice(1).join(' ') || '');
+    if (user && user.email) {
+      setEmail(user.email);
     }
   }, [user]);
 
@@ -61,48 +55,34 @@ export default function CheckoutPage() {
     }
     const pedidoResponse = await ApiService.post('/pedidos', {
       itens: cartItems.map(item => ({ produtoId: item.id, quantidade: item.quantity })),
-      enderecoEntrega: { ...shippingAddress, firstName, lastName },
+      enderecoEntrega: shippingAddress,
       freteId: selectedShipping.id,
     });
     return pedidoResponse.data.id;
   };
 
-  // Efeito principal para inicializar e destruir o Payment Brick
+  // Efeito para inicializar e destruir o Payment Brick
   useEffect(() => {
     let brickController;
-
     const initBrick = async () => {
       if (paymentMethod === 'card' && total > 0 && typeof window !== 'undefined' && window.MercadoPago) {
         try {
           const container = document.getElementById('cardPaymentBrick_container');
           if (container.innerHTML !== '') container.innerHTML = '';
-
           const publicKey = "APP_USR-f643797d-d212-4b29-be56-471031739e1c";
           const mp = new window.MercadoPago(publicKey);
           const bricksBuilder = mp.bricks();
-
           const settings = {
             initialization: {
               amount: total,
-              payer: {
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
-                identification: {
-                  type: 'CPF',
-                  number: cpf,
-                },
-              },
+              payer: { email: email || undefined },
             },
-            customization: {
-              visual: { style: { theme: 'default' } },
-              paymentMethods: { creditCard: "all", debitCard: "all" },
-            },
+            customization: { visual: { style: { theme: 'default' } } },
             callbacks: {
               onReady: () => {},
               onError: (error) => {
                 console.error("[BRICK ERROR]", error);
-                setPaymentError("Erro ao processar dados do cartão. Verifique os campos.");
+                setPaymentError("Erro ao processar dados do cartão.");
               },
               onSubmit: async (formData) => {
                 setIsProcessing(true);
@@ -116,7 +96,10 @@ export default function CheckoutPage() {
                     issuer_id: formData.issuer_id,
                     installments: formData.installments,
                     payment_method_id: formData.payment_method_id,
-                    payer: formData.payer,
+                    payer: {
+                      email: formData.payer.email,
+                      identification: formData.payer.identification,
+                    },
                   };
                   const paymentResponse = await ApiService.post('/pagamentos/processar', paymentPayload);
                   if (paymentResponse.data.status === 'approved') {
@@ -133,20 +116,12 @@ export default function CheckoutPage() {
             },
           };
           brickController = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', settings);
-        } catch (error) {
-          console.error("Falha ao inicializar o Payment Brick:", error);
-        }
+        } catch (error) { console.error("Falha ao inicializar o Payment Brick:", error); }
       }
     };
-
     initBrick();
-
-    return () => {
-      if (brickController) {
-        brickController.unmount();
-      }
-    };
-  }, [paymentMethod, total, email, firstName, lastName, cpf]); // Dependências otimizadas
+    return () => { if (brickController) brickController.unmount(); };
+  }, [paymentMethod, total, email]);
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -251,24 +226,18 @@ export default function CheckoutPage() {
         <div className={styles.formColumn}>
           <form id="form-checkout">
             <div className={styles.formSection}>
-              <h2>Informações do Pagador</h2>
-              <div className={styles.formGrid}>
-                <div className={styles.inputGroup}><label htmlFor="firstNamePayer">Nome</label><input type="text" id="firstNamePayer" value={firstName} onChange={(e) => setFirstName(e.target.value)} required /></div>
-                <div className={styles.inputGroup}><label htmlFor="lastNamePayer">Sobrenome</label><input type="text" id="lastNamePayer" value={lastName} onChange={(e) => setLastName(e.target.value)} required /></div>
-              </div>
+              <h2>Informações de Contato</h2>
               <div className={styles.inputGroup}><label htmlFor="email">Email</label><input type="email" id="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-              <div className={styles.inputGroup}><label htmlFor="cpf">CPF</label><input type="text" id="cpf" value={cpf} onChange={(e) => setCpf(e.target.value)} placeholder="000.000.000-00" required /></div>
             </div>
-
             <div className={styles.formSection}>
               <h2>Endereço de Entrega</h2>
+              <div className={styles.formGrid}><div className={styles.inputGroup}><label htmlFor="firstName">Nome</label><input type="text" name="firstName" value={shippingAddress.firstName} onChange={handleAddressChange} required /></div><div className={styles.inputGroup}><label htmlFor="lastName">Sobrenome</label><input type="text" name="lastName" value={shippingAddress.lastName} onChange={handleAddressChange} required /></div></div>
               <div className={styles.cepGroup}><div className={styles.inputGroup}><label htmlFor="cep">CEP</label><input type="text" name="cep" value={shippingAddress.cep} onChange={handleAddressChange} onBlur={handleCepLookup} placeholder="00000-000" required /></div><button type="button" onClick={handleCepLookup} disabled={loadingCep}>{loadingCep ? 'Buscando...' : 'Buscar Frete'}</button></div>
               <div className={styles.inputGroup}><label htmlFor="address">Endereço</label><input type="text" name="address" value={shippingAddress.address} onChange={handleAddressChange} required /></div>
               <div className={styles.formGrid}><div className={styles.inputGroup}><label htmlFor="number">Número</label><input type="text" name="number" value={shippingAddress.number} onChange={handleAddressChange} required /></div><div className={styles.inputGroup}><label htmlFor="complement">Complemento (opcional)</label><input type="text" name="complement" value={shippingAddress.complement} onChange={handleAddressChange} /></div></div>
               <div className={styles.inputGroup}><label htmlFor="neighborhood">Bairro</label><input type="text" name="neighborhood" value={shippingAddress.neighborhood} onChange={handleAddressChange} required /></div>
               <div className={styles.formGrid}><div className={styles.inputGroup}><label htmlFor="city">Cidade</label><input type="text" name="city" value={shippingAddress.city} onChange={handleAddressChange} required /></div><div className={styles.inputGroup}><label htmlFor="state">Estado</label><select name="state" value={shippingAddress.state} onChange={handleAddressChange} required><option value="SP">São Paulo</option><option value="RJ">Rio de Janeiro</option><option value="MG">Minas Gerais</option><option value="BA">Bahia</option></select></div></div>
             </div>
-            
             {shippingOptions.length > 0 && (
               <div className={styles.formSection}>
                 <h2>Método de Envio</h2>
@@ -277,7 +246,6 @@ export default function CheckoutPage() {
                 ))}
               </div>
             )}
-            
             <div className={styles.formSection}>
               <h2>Pagamento</h2>
               <div className={styles.paymentTabs}>
@@ -289,7 +257,21 @@ export default function CheckoutPage() {
 
               {paymentMethod === 'pix' && (
                 <>
-                  <div className={styles.paymentContent + ' ' + styles.pixContent}><p>Um QR Code para pagamento será gerado ao clicar no botão abaixo.</p></div>
+                  <div className={styles.paymentContent}>
+                    {/* --- CAMPO DE CPF PARA O PIX ADICIONADO AQUI --- */}
+                    <div className={styles.inputGroup}>
+                      <label htmlFor="pix_cpf">CPF do pagador</label>
+                      <input 
+                        type="text" 
+                        id="pix_cpf" 
+                        value={cpf} 
+                        onChange={(e) => setCpf(e.target.value)} 
+                        placeholder="000.000.000-00" 
+                        required 
+                      />
+                    </div>
+                    <div className={styles.pixContent}><p>Um QR Code para pagamento será gerado ao clicar no botão abaixo.</p></div>
+                  </div>
                   <button type="button" onClick={handlePixSubmit} className={styles.submitButton} disabled={isProcessing || !selectedShipping}><FiLock /> {isProcessing ? 'Gerando Pix...' : `Gerar QR Code Pix (R$ ${total.toFixed(2).replace('.', ',')})`}</button>
                 </>
               )}
@@ -298,7 +280,6 @@ export default function CheckoutPage() {
             {paymentError && <p className={styles.errorText}>{paymentError}</p>}
           </form>
         </div>
-        
         <div className={styles.summaryColumn}>
           <div className={styles.summaryContent}>
             <h2>Resumo do Pedido</h2>
