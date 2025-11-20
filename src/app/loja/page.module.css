@@ -1,6 +1,9 @@
+/* src/app/loja/page.module.css */
+
 .main {
   background-color: #f8f9fa;
   padding: 4rem 2rem 6rem;
+  min-height: 100vh;
 }
 
 .container {
@@ -24,6 +27,8 @@
   margin-bottom: 3rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid #e5e7eb;
+  position: relative; /* Necessário para os dropdowns absolutos */
+  z-index: 10;
 }
 
 .filters, .sort {
@@ -34,125 +39,91 @@
   font-weight: 500;
 }
 
+/* --- DROPDOWNS DE FILTRO --- */
+.filterGroup {
+  position: relative;
+}
+
 .filterButton {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   background: none;
-  border: none;
+  border: 1px solid transparent;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 500;
   color: #333;
+  transition: all 0.2s;
 }
 
-.productCount {
-  color: #888;
-  font-size: 0.9rem;
+.filterButton:hover, .filterButton.active {
+  background-color: white;
+  border-color: #e5e7eb;
+  color: #1A234B;
 }
 
-/* Grade de Produtos */
-.productGrid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 2rem;
+.dropdownMenu {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  min-width: 250px;
+  z-index: 20;
+  animation: fadeIn 0.2s ease-out;
 }
 
-.productCard {
-  text-decoration: none;
-  color: inherit;
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Inputs dentro do dropdown */
+.filterOption {
   display: flex;
-  flex-direction: column;
-  transition: transform 0.2s ease;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  font-size: 0.95rem;
 }
 
-.productCard:hover {
-  transform: translateY(-5px);
+.filterOption input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #1A234B;
 }
 
-.imageContainer {
-  position: relative;
-  background-color: #ffffff;
-  padding: 2rem;
-  border-radius: 8px;
+.priceInputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
-.saleTag {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  background-color: #1A234B;
-  color: white;
-  padding: 0.4rem 0.9rem;
-  border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 600;
+.priceInput {
+  width: 100px;
+  padding: 0.6rem;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
-.productImage {
-  width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-
-.infoContainer {
-  text-align: left;
-}
-
-.productName {
-  font-size: 1rem;
-  font-weight: 500;
-  color: #333;
-  margin-bottom: 0.5rem;
-  min-height: 40px;
-}
-
-.priceContainer {
-  display: flex;
-  align-items: baseline;
-  gap: 0.7rem;
-}
-
-.originalPrice {
-  text-decoration: line-through;
+.priceSeparator {
   color: #888;
 }
 
-.currentPrice {
-  font-weight: 700;
-  color: #1A234B;
-  font-size: 1.2rem;
-}
-
-/* Responsividade */
-@media (max-width: 1024px) {
-  .productGrid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 768px) {
-  .filterBar {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-}
-
-@media (max-width: 600px) {
-  .productGrid {
-    grid-template-columns: 1fr;
-  }
-}
-/* Adicione estas novas classes ao final do seu arquivo page.module.css */
-
-.infoMessage {
-  text-align: center;
-  font-size: 1.1rem;
-  color: #555;
-  padding: 4rem 0;
-  background-color: #ffffff;
-  border-radius: 15px;
+/* Ordenação */
+.productCount {
+  color: #888;
+  font-size: 0.9rem;
+  margin-left: 1rem;
 }
 
 .sort label {
@@ -170,6 +141,89 @@
   cursor: pointer;
 }
 
+/* Grade de Produtos */
+.productGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 2rem;
+}
+
+.productCard {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease;
+  background-color: white;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid transparent;
+}
+
+.productCard:hover {
+  transform: translateY(-5px);
+  border-color: #e5e7eb;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.imageContainer {
+  position: relative;
+  background-color: #ffffff;
+  padding: 2rem;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  justify-content: center;
+}
+
+.saleTag {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  background-color: #1A234B;
+  color: white;
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  z-index: 2;
+}
+
+.productImage {
+  width: 100%;
+  height: 200px; /* Altura fixa para alinhar cards */
+  object-fit: contain;
+}
+
+.infoContainer {
+  padding: 1.5rem;
+  text-align: left;
+}
+
+.productName {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 0.5rem;
+  min-height: 40px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.priceContainer {
+  display: flex;
+  align-items: baseline;
+  gap: 0.7rem;
+}
+
+.currentPrice {
+  font-weight: 700;
+  color: #1A234B;
+  font-size: 1.1rem;
+}
+
+/* Paginação */
 .pagination {
   display: flex;
   justify-content: center;
@@ -194,11 +248,49 @@
 }
 
 .pagination button:disabled {
-  background-color: #9ca3af;
+  background-color: #ccc;
   cursor: not-allowed;
 }
 
 .pagination span {
   font-weight: 500;
   color: #333;
+}
+
+.infoMessage {
+  text-align: center;
+  font-size: 1.1rem;
+  color: #555;
+  padding: 4rem 0;
+  background-color: #ffffff;
+  border-radius: 15px;
+  width: 100%;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .productGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .filterBar {
+    flex-direction: column;
+    gap: 1.5rem;
+    align-items: flex-start;
+  }
+  .filters, .sort {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 600px) {
+  .productGrid {
+    grid-template-columns: 1fr;
+  }
+  .filters {
+    flex-wrap: wrap;
+  }
 }

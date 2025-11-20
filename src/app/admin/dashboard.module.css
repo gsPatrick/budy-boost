@@ -1,0 +1,212 @@
+/* src/app/admin/dashboard.module.css */
+
+.dashboardWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  padding-bottom: 2rem;
+  font-family: 'Assistant', sans-serif;
+}
+
+/* --- KPI CARDS --- */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.kpiCard {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(0,0,0,0.02);
+}
+
+.kpiCard:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+}
+
+.iconWrapper {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  transition: transform 0.3s;
+}
+
+.kpiCard:hover .iconWrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+/* Cores vibrantes para os ícones */
+.blue { background: linear-gradient(135deg, #e0eaff 0%, #cce0ff 100%); color: #1A234B; }
+.green { background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%); color: #166534; }
+.purple { background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%); color: #6b21a8; }
+.orange { background: linear-gradient(135deg, #ffedd5 0%, #fed7aa 100%); color: #c2410c; }
+
+.kpiInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpiLabel {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 0.4rem;
+  font-weight: 500;
+}
+
+.kpiValue {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin: 0;
+  line-height: 1;
+}
+
+/* --- CHARTS SECTION --- */
+.chartsSection {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+}
+
+.chartContainer {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.02);
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+}
+
+.chartHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.chartTitle {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1A234B;
+  margin: 0;
+}
+
+/* --- TABLE (TOP PRODUCTS) --- */
+.topProductsList {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.miniTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.miniTable th {
+  text-align: left;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.miniTable td {
+  padding: 1.2rem 0;
+  font-size: 0.95rem;
+  color: #4b5563;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: middle;
+}
+
+.miniTable tr:last-child td {
+  border-bottom: none;
+}
+
+.prodName {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.rank {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+/* Variações de rank top 3 */
+.rank1 { background-color: #fef3c7; color: #d97706; }
+.rank2 { background-color: #f1f5f9; color: #64748b; }
+.rank3 { background-color: #ffedd5; color: #c2410c; }
+
+.emptyChartState {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #9ca3af;
+  gap: 1rem;
+  min-height: 200px;
+}
+
+/* --- LOADING --- */
+.loadingContainer {
+  height: 70vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  color: #1A234B;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #1A234B;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 1024px) {
+  .chartsSection {
+    grid-template-columns: 1fr;
+  }
+  
+  .chartContainer {
+    min-height: auto;
+  }
+}

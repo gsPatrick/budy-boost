@@ -179,3 +179,37 @@
   border-radius: 50px;
   font-weight: 600;
 }
+
+/* ... estilos anteriores ... */
+
+/* Estilo para item de assinatura */
+.subscriptionItem {
+    background-color: #f0f9ff; /* Azul bem clarinho */
+    border: 1px solid #bae6fd;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.badgeSub {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background-color: #1A234B;
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+.warningBox {
+    background-color: #fef2f2;
+    color: #dc2626;
+    padding: 1rem;
+    font-size: 0.9rem;
+    text-align: center;
+    border-top: 1px solid #fee2e2;
+}
+
+/* ... restante do css ... */

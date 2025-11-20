@@ -10,9 +10,7 @@ const AdminLayout = ({ children }) => {
   const navItems = [
     { href: '/admin/pedidos', icon: <FiBox />, label: 'Gerenciar Pedidos' },
     { href: '/admin/produtos', icon: <FiFileText />, label: 'Gerenciar Produtos' },
-    { href: '/admin/cms', icon: <FiLayout />, label: 'Editar Conteúdo do Site' },
        { href: '/admin/categorias', icon: <FiLayout />, label: 'Categorias / Kits' }, 
-    // { href: '/admin/cms', icon: <FiLayout />, label: 'Editar Conteúdo do Site' }, // Se você tinha esta, pode manter ou substituir
   ];
 
   return (

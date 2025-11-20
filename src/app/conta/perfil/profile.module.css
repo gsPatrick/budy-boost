@@ -1,0 +1,469 @@
+/* src/app/conta/perfil/profile.module.css */
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 4rem 2rem;
+  background-color: #f8f9fa;
+  min-height: 80vh;
+}
+
+.pageTitle {
+  font-size: 2.5rem;
+  color: #1A234B;
+  margin-bottom: 2rem;
+  font-weight: 700;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 2rem;
+}
+
+/* --- SIDEBAR (MENU) --- */
+.sidebar {
+  background-color: white;
+  border-radius: 15px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  height: fit-content;
+}
+
+.userInfo {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.userAvatar {
+  width: 80px;
+  height: 80px;
+  background-color: #e0eaff;
+  color: #1A234B;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0 auto 1rem;
+}
+
+.userName {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #1A234B;
+  margin-bottom: 0.2rem;
+}
+
+.userEmail {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.navMenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.navButton {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 1rem;
+  border: none;
+  background: transparent;
+  color: #4b5563;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: all 0.2s;
+  text-align: left;
+  width: 100%;
+}
+
+.navButton:hover {
+  background-color: #f3f4f6;
+  color: #1A234B;
+}
+
+.activeNav {
+  background-color: #1A234B;
+  color: white;
+}
+
+.activeNav:hover {
+  background-color: #2c3a6e;
+  color: white;
+}
+
+.logoutButton {
+  margin-top: 2rem;
+  color: #dc2626;
+  border-top: 1px solid #e5e7eb;
+  border-radius: 0;
+  padding-top: 1.5rem;
+}
+
+.logoutButton:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+/* --- ÁREA DE CONTEÚDO --- */
+.contentArea {
+  background-color: white;
+  border-radius: 15px;
+  padding: 2.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  color: #1A234B;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* --- DETALHES (Header com Voltar) --- */
+.detailsHeader {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #6b7280;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.backButton:hover {
+  color: #1A234B;
+}
+
+/* --- CARD DE PEDIDO / LISTA --- */
+.orderCard {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  transition: box-shadow 0.2s;
+}
+
+.orderCard:hover {
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.orderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.orderId {
+  font-weight: 700;
+  color: #1A234B;
+  font-size: 1.1rem;
+}
+
+.orderDate {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.statusBadge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status_pago, .status_entregue, .status_ativa, .status_aprovado {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.status_pendente, .status_processando {
+  background-color: #fef9c3;
+  color: #854d0e;
+}
+.status_cancelado, .status_cancelada, .status_rejeitado {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.status_enviado {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.orderItems {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.itemRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.itemImage {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  object-fit: cover;
+}
+
+.itemInfo {
+  flex: 1;
+}
+
+.itemName {
+  font-weight: 500;
+  color: #374151;
+  display: block;
+}
+
+.itemMeta {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.orderFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+.orderTotal {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1A234B;
+}
+
+.btnDetails {
+  background-color: #fff;
+  border: 1px solid #1A234B;
+  color: #1A234B;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+}
+
+.btnDetails:hover {
+  background-color: #1A234B;
+  color: white;
+}
+
+/* --- DETALHES DO PEDIDO (Estrutura Interna) --- */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.detailsBox {
+  background-color: #f9fafb;
+  padding: 1.5rem;
+  border-radius: 10px;
+}
+
+.detailsBox h4 {
+  color: #1A234B;
+  margin-bottom: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.5rem;
+}
+
+.detailsBox p {
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+  font-size: 0.95rem;
+}
+
+.financialSummary {
+  margin-top: 1rem;
+}
+
+.financialRow {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  color: #4b5563;
+}
+
+.financialTotal {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #cbd5e1;
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: #1A234B;
+}
+
+/* --- TABELA DE ASSINATURAS --- */
+.subscriptionCard {
+  background-color: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.subInfo h3 {
+  color: #1A234B;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+}
+
+.subDetail {
+  color: #4b5563;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.cancelButton {
+  padding: 0.6rem 1.2rem;
+  border: 1px solid #dc2626;
+  color: #dc2626;
+  background: white;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  margin-top: 1rem;
+}
+
+.cancelButton:hover {
+  background-color: #dc2626;
+  color: white;
+}
+
+/* --- FORMULÁRIO GERAL --- */
+.formGroup {
+  margin-bottom: 1.2rem;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.input {
+  width: 100%;
+  padding: 0.8rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.saveButton {
+  background-color: #1A234B;
+  color: white;
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+/* --- ESTADOS VAZIOS E LOADING --- */
+.emptyState {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #6b7280;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
+  color: #1A234B;
+  font-weight: 500;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .sidebar {
+    margin-bottom: 1rem;
+  }
+
+  .navMenu {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  
+  .navButton {
+    width: auto;
+    white-space: nowrap;
+  }
+  
+  .logoutButton {
+    margin-top: 0;
+    border-top: none;
+    border-left: 1px solid #e5e7eb;
+  }
+
+  .subscriptionCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .detailsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .cancelButton {
+    width: 100%;
+  }
+}

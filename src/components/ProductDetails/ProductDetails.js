@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import ApiService from '../../services/api.service';
 import styles from './ProductDetails.module.css';
 
-// --- SUB-COMPONENTE ACORDEÃO (sem alterações) ---
+// --- SUB-COMPONENTE ACORDEÃO ---
 const AccordionItem = ({ title, icon, children, startOpen = false }) => {
   const [isOpen, setIsOpen] = useState(startOpen);
   return (
@@ -26,71 +26,55 @@ const AccordionItem = ({ title, icon, children, startOpen = false }) => {
   );
 };
 
-// --- COMPONENTE PRINCIPAL (COM AS CORREÇÕES) ---
+// --- COMPONENTE PRINCIPAL ---
 const ProductDetails = ({ product }) => {
-  const { addToCart } = useCart();
+  const { addToCart, openCartPanel } = useCart();
   const { user } = useAuth();
   const router = useRouter();
 
   // Estados para controlar as seleções do usuário
   const [quantity, setQuantity] = useState(1);
   const [purchaseType, setPurchaseType] = useState('onetime'); // 'onetime' ou 'subscribe'
-  const [subscriptionFrequency, setSubscriptionFrequency] = useState(60);
-  const [associatedPlans, setAssociatedPlans] = useState([]);
-
-  // Busca planos de assinatura associados ao produto
-  useEffect(() => {
-    const fetchPlans = async () => {
-      if (product && product.id) {
-        try {
-          const response = await ApiService.get(`/produtos/${product.id}/planos`);
-          setAssociatedPlans(response.data);
-        } catch (error) {
-          console.error("Erro ao buscar planos de assinatura:", error);
-        }
-      }
-    };
-    fetchPlans();
-  }, [product]);
+  const [subscriptionFrequency, setSubscriptionFrequency] = useState(30); // Padrão 30 dias
 
   // Dados do produto e cálculo de preços
   const originalPrice = parseFloat(product.preco || 0);
   const stock = parseInt(product.estoque || 0, 10);
+
+  // Lógica de desconto por quantidade (Volume Discount)
   const prices = {
     1: originalPrice * 0.85, // 15% off
     2: originalPrice * 0.76, // 24% off
     3: originalPrice * 0.70, // 30% off
     4: originalPrice * 0.65, // 35% off
   };
-  const pricePerJar = prices[quantity];
-  const oneTimePrice = originalPrice;
-  const subscriptionPrice = pricePerJar; // O preço da assinatura já é o com desconto da quantidade
 
-  // Função do botão principal que decide o que fazer
+  // Definição de preços baseada no tipo de compra
+  // Assinatura aproveita o desconto de volume. Compra única usa preço cheio (neste exemplo)
+  const pricePerJar = prices[quantity];
+  const oneTimePrice = originalPrice; 
+  const subscriptionPrice = pricePerJar; 
+
+  // Função Principal: Adicionar ao Carrinho
   const handleMainAction = () => {
-    if (purchaseType === 'onetime') {
-      const productToAdd = {
-        id: product.id,
-        name: product.nome,
-        price: oneTimePrice, // Para compra única, usamos o preço cheio
-        image: product.imagens?.[0] || '/placeholder-produto.png',
-        quantity: quantity,
-      };
-      addToCart(productToAdd);
-    } else {
-      // Lógica de Assinatura
-      if (!user) {
-        alert("Você precisa estar logado para criar uma assinatura.");
-        router.push('/conta');
-        return;
-      }
-      const planId = associatedPlans[0]?.id;
-      if (!planId) {
-        alert("Nenhum plano de assinatura disponível para este produto.");
-        return;
-      }
-      router.push(`/assinatura/checkout?plano=${planId}&frequencia=${subscriptionFrequency}&quantidade=${quantity}`);
-    }
+    // Prepara o objeto do produto para o carrinho
+    const productToAdd = {
+      id: product.id,
+      name: product.nome,
+      image: product.imagens?.[0] || '/placeholder-produto.png',
+      quantity: quantity,
+      // Flags importantes para o CartPanel decidir o fluxo de checkout
+      purchaseType: purchaseType, // 'onetime' ou 'subscribe'
+      frequency: purchaseType === 'subscribe' ? subscriptionFrequency : null,
+      // Define o preço baseado na escolha (Assinatura tem desconto)
+      price: purchaseType === 'subscribe' ? subscriptionPrice : oneTimePrice,
+    };
+
+    // Adiciona ao contexto do carrinho
+    addToCart(productToAdd);
+    
+    // Abre o painel lateral para feedback visual
+    openCartPanel();
   };
 
   return (
@@ -106,8 +90,14 @@ const ProductDetails = ({ product }) => {
           </div>
         </div>
         <div className={styles.priceSection}>
-          <span className={styles.originalPrice}>R$ {originalPrice.toFixed(2).replace('.', ',')}</span>
-          <span className={styles.currentPrice}>R$ {subscriptionPrice.toFixed(2).replace('.', ',')}</span>
+          {/* Mostra preços diferentes dependendo da seleção atual */}
+          <span className={styles.originalPrice}>
+            R$ {purchaseType === 'subscribe' ? oneTimePrice.toFixed(2).replace('.', ',') : (originalPrice * 1.2).toFixed(2).replace('.', ',')}
+          </span>
+          <span className={styles.currentPrice}>
+            R$ {purchaseType === 'subscribe' ? subscriptionPrice.toFixed(2).replace('.', ',') : oneTimePrice.toFixed(2).replace('.', ',')}
+          </span>
+          
           {stock > 0 ? (
             <span className={styles.stockStatus}><FiCheckCircle /> Em estoque</span>
           ) : (
@@ -156,16 +146,20 @@ const ProductDetails = ({ product }) => {
       {/* --- SEÇÃO 2: PLANO --- */}
       <div className={styles.purchaseOptionsContainer}>
           <h3 className={styles.sectionTitle}>2 - Selecione o plano</h3>
+          
+          {/* Opção Compra Única */}
           <div className={`${styles.planOption} ${purchaseType === 'onetime' ? styles.selectedOption : ''}`} onClick={() => setPurchaseType('onetime')}>
               <input type="radio" name="purchaseType" checked={purchaseType === 'onetime'} readOnly />
               <div className={styles.planText}>
                   <span className={styles.planTitle}>Compra Única</span>
               </div>
               <div className={styles.planPriceContainer}>
-                  <span className={styles.planOriginalPrice}>R$ {originalPrice.toFixed(2).replace('.', ',')}</span>
+                  <span className={styles.planOriginalPrice}>R$ {(originalPrice * 1.2).toFixed(2).replace('.', ',')}</span>
                   <span className={styles.planFinalPrice}>R$ {oneTimePrice.toFixed(2).replace('.', ',')}</span>
               </div>
           </div>
+
+          {/* Opção Assinatura */}
           <div className={`${styles.planOption} ${purchaseType === 'subscribe' ? styles.selectedOption : ''}`} onClick={() => setPurchaseType('subscribe')}>
               <span className={styles.saveTag}>Economize R$ {(oneTimePrice - subscriptionPrice).toFixed(2).replace('.',',')}</span>
               <input type="radio" name="purchaseType" checked={purchaseType === 'subscribe'} readOnly />
@@ -183,13 +177,29 @@ const ProductDetails = ({ product }) => {
                   <span className={styles.planFinalPrice}>R$ {subscriptionPrice.toFixed(2).replace('.', ',')}</span>
               </div>
 
+              {/* Seletor de Frequência (Só aparece se Assinatura estiver selecionada) */}
               {purchaseType === 'subscribe' && (
                   <div className={styles.dogSizeSelectorWrapper}>
-                      <p className={styles.dogSizeLabel}>Escolha o tamanho do cão:</p>
+                      <p className={styles.dogSizeLabel}>Frequência de envio:</p>
                       <div className={styles.dogSizeSelector}>
-                          <button className={subscriptionFrequency === 60 ? styles.activeDogSize : ''} onClick={(e) => { e.stopPropagation(); setSubscriptionFrequency(60); }}>Cão Pequeno: <strong>A cada 60 dias</strong></button>
-                          <button className={subscriptionFrequency === 30 ? styles.activeDogSize : ''} onClick={(e) => { e.stopPropagation(); setSubscriptionFrequency(30); }}>Cão Médio: <strong>A cada 30 dias</strong></button>
-                          <button className={subscriptionFrequency === 20 ? styles.activeDogSize : ''} onClick={(e) => { e.stopPropagation(); setSubscriptionFrequency(20); }}>Cão Grande: <strong>A cada 20 dias</strong></button>
+                          <button 
+                            className={subscriptionFrequency === 30 ? styles.activeDogSize : ''} 
+                            onClick={(e) => { e.stopPropagation(); setSubscriptionFrequency(30); }}
+                          >
+                            <strong>A cada 30 dias</strong>
+                          </button>
+                          <button 
+                            className={subscriptionFrequency === 60 ? styles.activeDogSize : ''} 
+                            onClick={(e) => { e.stopPropagation(); setSubscriptionFrequency(60); }}
+                          >
+                            <strong>A cada 60 dias</strong>
+                          </button>
+                          <button 
+                            className={subscriptionFrequency === 90 ? styles.activeDogSize : ''} 
+                            onClick={(e) => { e.stopPropagation(); setSubscriptionFrequency(90); }}
+                          >
+                            <strong>A cada 90 dias</strong>
+                          </button>
                       </div>
                   </div>
               )}
@@ -198,7 +208,7 @@ const ProductDetails = ({ product }) => {
 
       {/* --- BOTÃO DE AÇÃO ÚNICO --- */}
       <button onClick={handleMainAction} className={styles.addToCartButton}>
-        {purchaseType === 'onetime' ? 'Adicionar ao Carrinho' : 'Assinar Agora'}
+        {purchaseType === 'onetime' ? 'Adicionar ao Carrinho' : 'Adicionar Assinatura ao Carrinho'}
       </button>
 
       {/* --- SEÇÃO DE CONFIANÇA --- */}

@@ -1,0 +1,383 @@
+/* src/app/assinatura/checkout/subscriptionCheckout.module.css */
+
+.pageWrapper {
+    background-color: #f3f4f6;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    font-family: 'Assistant', sans-serif;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* --- HEADER --- */
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.header h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #1A234B;
+    margin: 0;
+}
+
+.secureBadge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #e0eaff;
+    color: #1A234B;
+    padding: 0.5rem 1rem;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* --- GRID LAYOUT --- */
+.grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 2rem;
+    align-items: flex-start;
+}
+
+.leftColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.rightColumn {
+    position: sticky;
+    top: 2rem;
+}
+
+/* --- CARDS GENÉRICOS --- */
+.card {
+    background-color: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    border: 1px solid #e5e7eb;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    padding-bottom: 1rem;
+}
+
+.cardHeader h2 {
+    font-size: 1.25rem;
+    color: #1f2937;
+    font-weight: 600;
+    margin: 0;
+}
+
+.stepNumber {
+    background-color: #1A234B;
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.cardSub {
+    font-size: 0.95rem;
+    color: #6b7280;
+    margin-bottom: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* --- FORMULÁRIOS --- */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.row {
+    display: flex;
+    gap: 1rem;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    flex: 1;
+}
+
+.inputGroup label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+.inputGroup input {
+    padding: 0.8rem 1rem;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.inputGroup input:focus {
+    outline: none;
+    border-color: #1A234B;
+    box-shadow: 0 0 0 3px rgba(26, 35, 75, 0.1);
+}
+
+.readOnly {
+    background-color: #f9fafb;
+    color: #6b7280;
+    cursor: not-allowed;
+}
+
+/* --- ÁREA DE PAGAMENTO --- */
+.paymentContainer {
+    margin-top: 1rem;
+    min-height: 300px; /* Evita pulo de layout enquanto carrega */
+}
+
+.processingMessage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background-color: #f0f9ff;
+    color: #0369a1;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-top: 1rem;
+}
+
+.errorMessage {
+    padding: 1rem;
+    background-color: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fee2e2;
+    border-radius: 8px;
+    margin-top: 1rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* --- RESUMO (DIREITA) --- */
+.summaryCard {
+    background-color: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+}
+
+.summaryCard h3 {
+    font-size: 1.1rem;
+    color: #111827;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.productResume {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+}
+
+.imageWrapper {
+    background-color: #f3f4f6;
+    border-radius: 8px;
+    padding: 0.5rem;
+    border: 1px solid #e5e7eb;
+}
+
+.productInfo h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1f2937;
+    margin: 0 0 0.3rem 0;
+    line-height: 1.4;
+}
+
+.productInfo span {
+    font-size: 0.9rem;
+    color: #6b7280;
+}
+
+/* Configuração de Frequência */
+.configSection {
+    background-color: #f8fafc;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 1.5rem;
+}
+
+.configSection label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #1A234B;
+    margin-bottom: 0.5rem;
+}
+
+.frequencySelect {
+    width: 100%;
+    padding: 0.7rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    background-color: white;
+    font-size: 0.95rem;
+    color: #333;
+    cursor: pointer;
+}
+
+.configSection small {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+    line-height: 1.4;
+}
+
+.divider {
+    height: 1px;
+    background-color: #e5e7eb;
+    margin: 1.5rem 0;
+}
+
+/* Totais */
+.totals {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.totalRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.95rem;
+    color: #4b5563;
+}
+
+.finalTotal {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1A234B;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #cbd5e1;
+}
+
+.recurrenceAlert {
+    background-color: #ecfdf5;
+    color: #047857;
+    padding: 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #d1fae5;
+}
+
+/* Benefícios */
+.benefitsList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.benefitsList li {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 0.8rem;
+}
+
+/* Loading e Spinners */
+.loadingContainer, .errorContainer {
+    min-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    color: #1A234B;
+    font-weight: 500;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #1A234B;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.spinnerSmall {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #e5e7eb;
+    border-top-color: #0369a1;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.backButton {
+    background-color: #1A234B;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+/* Responsividade */
+@media (max-width: 900px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .rightColumn {
+        position: static;
+        order: -1; /* Coloca o resumo em cima no mobile */
+    }
+
+    .row {
+        flex-direction: column;
+        gap: 1rem;
+    }
+}

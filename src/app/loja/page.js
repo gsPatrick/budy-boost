@@ -1,112 +1,117 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { FiChevronDown } from 'react-icons/fi';
+import { useState, useEffect, useMemo } from 'react';
+import { FiChevronDown, FiX } from 'react-icons/fi';
 import Image from 'next/image';
 import Link from 'next/link';
 import styles from './page.module.css';
 import ApiService from '../../services/api.service';
 
 export default function ShopPage() {
-  // Estados para dados e UI
-  const [products, setProducts] = useState([]);
+  // Estados de Dados
+  const [allProducts, setAllProducts] = useState([]); // Todos os produtos vindos da API
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Estados de Filtro e Ordenação
+  const [sortOrder, setSortOrder] = useState('lancamentos');
+  const [activeDropdown, setActiveDropdown] = useState(null); // 'availability', 'price', ou null
   
-  // Estado para filtros e ordenação
-  const [sortOrder, setSortOrder] = useState('lancamentos'); // Padrão: mais recentes
-  
-  // Estado para paginação
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalProducts: 0,
+  const [filters, setFilters] = useState({
+    inStock: false,
+    minPrice: '',
+    maxPrice: ''
   });
 
-  // useEffect para buscar produtos sempre que a ordenação ou a página mudar
+  // Estados de Paginação
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
+  // 1. Buscar TUDO da API ao carregar
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-      setError(null);
       try {
+        // limit=1000 para pegar "todos" e filtrar no front
         const response = await ApiService.get('/produtos', {
-          params: {
-            page: pagination.currentPage,
-            limit: 8, // Vamos exibir 8 produtos por página
-            ordenarPor: sortOrder,
-          },
+          params: { limit: 1000 } 
         });
         
-        const { produtos, total, totalPages, currentPage } = response.data;
-
-        setProducts(produtos);
-        setPagination({
-          currentPage: currentPage,
-          totalPages: totalPages,
-          totalProducts: total,
-        });
-
+        // Garante que pegamos o array correto
+        const produtosRaw = response.data.produtos || response.data || [];
+        setAllProducts(produtosRaw);
       } catch (err) {
         console.error("Erro ao buscar produtos:", err);
-        setError("Não foi possível carregar os produtos. Tente novamente mais tarde.");
+        setError("Não foi possível carregar os produtos.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [sortOrder, pagination.currentPage]); // Dependências: re-executa ao mudar a ordem ou a página
+  }, []);
 
-  // Função para mudar a página
-  const handlePageChange = (newPage) => {
-    if (newPage > 0 && newPage <= pagination.totalPages) {
-      setPagination(prev => ({ ...prev, currentPage: newPage }));
-      window.scrollTo(0, 0); // Rola para o topo da página
+  // 2. Lógica de Filtragem e Ordenação (useMemo para performance)
+  const processedProducts = useMemo(() => {
+    let result = [...allProducts];
+
+    // A. Filtrar por Estoque
+    if (filters.inStock) {
+      result = result.filter(p => (p.estoque || 0) > 0);
     }
+
+    // B. Filtrar por Preço
+    if (filters.minPrice !== '') {
+      result = result.filter(p => parseFloat(p.preco) >= parseFloat(filters.minPrice));
+    }
+    if (filters.maxPrice !== '') {
+      result = result.filter(p => parseFloat(p.preco) <= parseFloat(filters.maxPrice));
+    }
+
+    // C. Ordenação
+    switch (sortOrder) {
+      case 'nome_asc':
+        result.sort((a, b) => a.nome.localeCompare(b.nome));
+        break;
+      case 'nome_desc':
+        result.sort((a, b) => b.nome.localeCompare(a.nome));
+        break;
+      case 'preco_asc':
+        result.sort((a, b) => parseFloat(a.preco) - parseFloat(b.preco));
+        break;
+      case 'preco_desc':
+        result.sort((a, b) => parseFloat(b.preco) - parseFloat(a.preco));
+        break;
+      case 'lancamentos':
+      default:
+        // Assume que IDs maiores são mais recentes ou usa createdAt se disponível
+        result.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        break;
+    }
+
+    return result;
+  }, [allProducts, filters, sortOrder]);
+
+  // 3. Paginação Front-end
+  const totalPages = Math.ceil(processedProducts.length / itemsPerPage);
+  const paginatedProducts = processedProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  // Handlers
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Função para renderizar o conteúdo principal (produtos, loading, erro, etc.)
-  const renderContent = () => {
-    if (loading) {
-      return <p className={styles.infoMessage}>Carregando produtos...</p>;
-    }
-    if (error) {
-      return <p className={styles.infoMessage}>{error}</p>;
-    }
-    if (products.length === 0) {
-      return <p className={styles.infoMessage}>Nenhum produto encontrado.</p>;
-    }
-    return (
-      <div className={styles.productGrid}>
-        {products.map((product) => {
-          // LÓGICA ATUALIZADA: Pega o preço diretamente do produto
-          const currentPrice = product.preco ? parseFloat(product.preco).toFixed(2).replace('.', ',') : '0,00';
-          
-          return (
-            <Link href={`/produtos/${product.slug}`} key={product.id} className={styles.productCard}>
-              <div className={styles.imageContainer}>
-                {/* A lógica de 'onSale' pode ser mais complexa, por enquanto vamos simplificar */}
-                {/* {product.onSale && <div className={styles.saleTag}>Sale</div>} */}
-                <Image 
-                  src={product.imagens?.[0] || '/placeholder-produto.png'} 
-                  alt={product.nome} 
-                  width={400} 
-                  height={400} 
-                  className={styles.productImage} 
-                />
-              </div>
-              <div className={styles.infoContainer}>
-                <p className={styles.productName}>{product.nome}</p>
-                <div className={styles.priceContainer}>
-                  {/* TEXTO ATUALIZADO: Removido "A partir de" */}
-                  <span className={styles.currentPrice}>R$ {currentPrice}</span>
-                </div>
-              </div>
-            </Link>
-          );
-        })}
-      </div>
-    );
+  const toggleDropdown = (name) => {
+    setActiveDropdown(activeDropdown === name ? null : name);
+  };
+
+  const handleFilterChange = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Volta para página 1 ao filtrar
   };
 
   return (
@@ -114,13 +119,76 @@ export default function ShopPage() {
       <div className={styles.container}>
         <h1 className={styles.pageTitle}>Loja</h1>
 
-        {/* Barra de Filtros */}
+        {/* --- BARRA DE FILTROS --- */ }
         <div className={styles.filterBar}>
           <div className={styles.filters}>
             <span>Filtrar:</span>
-            <button className={styles.filterButton}>Disponibilidade <FiChevronDown /></button>
-            <button className={styles.filterButton}>Preço <FiChevronDown /></button>
+            
+            {/* Dropdown Disponibilidade */}
+            <div className={styles.filterGroup}>
+                <button 
+                    className={`${styles.filterButton} ${filters.inStock ? styles.active : ''}`}
+                    onClick={() => toggleDropdown('availability')}
+                >
+                    Disponibilidade <FiChevronDown />
+                </button>
+                
+                {activeDropdown === 'availability' && (
+                    <div className={styles.dropdownMenu}>
+                        <label className={styles.filterOption}>
+                            <input 
+                                type="checkbox" 
+                                checked={filters.inStock}
+                                onChange={(e) => handleFilterChange('inStock', e.target.checked)}
+                            />
+                            Apenas em estoque
+                        </label>
+                    </div>
+                )}
+            </div>
+
+            {/* Dropdown Preço */}
+            <div className={styles.filterGroup}>
+                <button 
+                    className={`${styles.filterButton} ${(filters.minPrice || filters.maxPrice) ? styles.active : ''}`}
+                    onClick={() => toggleDropdown('price')}
+                >
+                    Preço <FiChevronDown />
+                </button>
+                
+                {activeDropdown === 'price' && (
+                    <div className={styles.dropdownMenu}>
+                        <div className={styles.priceInputs}>
+                            <input 
+                                type="number" 
+                                placeholder="Min" 
+                                className={styles.priceInput}
+                                value={filters.minPrice}
+                                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
+                            />
+                            <span className={styles.priceSeparator}>até</span>
+                            <input 
+                                type="number" 
+                                placeholder="Max" 
+                                className={styles.priceInput}
+                                value={filters.maxPrice}
+                                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
+                            />
+                        </div>
+                        {(filters.minPrice || filters.maxPrice) && (
+                           <button 
+                              onClick={() => { setFilters(p => ({...p, minPrice: '', maxPrice: ''})); setActiveDropdown(null); }}
+                              style={{fontSize: '0.8rem', color: 'red', background: 'none', border: 'none', cursor: 'pointer'}}
+                           >
+                              Limpar filtro de preço
+                           </button>
+                        )}
+                    </div>
+                )}
+            </div>
           </div>
+
+          {/* Ordenação e Contagem */}
           <div className={styles.sort}>
             <label htmlFor="sort-select">Ordenar por:</label>
             <select 
@@ -132,24 +200,67 @@ export default function ShopPage() {
               <option value="lancamentos">Lançamentos</option>
               <option value="nome_asc">Nome (A-Z)</option>
               <option value="nome_desc">Nome (Z-A)</option>
+              <option value="preco_asc">Menor Preço</option>
+              <option value="preco_desc">Maior Preço</option>
             </select>
-            <span className={styles.productCount}>{pagination.totalProducts} produtos</span>
+            <span className={styles.productCount}>{processedProducts.length} produtos</span>
           </div>
         </div>
 
-        {/* Grade de Produtos */}
-        {renderContent()}
+        {/* --- CONTEÚDO --- */}
+        {loading ? (
+            <p className={styles.infoMessage}>Carregando produtos...</p>
+        ) : error ? (
+            <p className={styles.infoMessage}>{error}</p>
+        ) : paginatedProducts.length === 0 ? (
+            <p className={styles.infoMessage}>Nenhum produto corresponde aos filtros selecionados.</p>
+        ) : (
+            <div className={styles.productGrid}>
+                {paginatedProducts.map((product) => {
+                    const currentPrice = product.preco ? parseFloat(product.preco).toFixed(2).replace('.', ',') : '0,00';
+                    const imgUrl = (product.imagens && product.imagens.length > 0) ? product.imagens[0] : '/placeholder-produto.png';
 
-        {/* Paginação */}
-        {!loading && products.length > 0 && pagination.totalPages > 1 && (
+                    return (
+                        <Link href={`/produtos/${product.slug}`} key={product.id} className={styles.productCard}>
+                            <div className={styles.imageContainer}>
+                                {/* Exemplo de tag dinâmica (se tiver lógica) */}
+                                {/* {product.estoque < 5 && <div className={styles.saleTag}>Últimas Unidades</div>} */}
+                                <Image 
+                                    src={imgUrl} 
+                                    alt={product.nome} 
+                                    width={400} 
+                                    height={400} 
+                                    className={styles.productImage} 
+                                />
+                            </div>
+                            <div className={styles.infoContainer}>
+                                <p className={styles.productName}>{product.nome}</p>
+                                <div className={styles.priceContainer}>
+                                    <span className={styles.currentPrice}>R$ {currentPrice}</span>
+                                </div>
+                            </div>
+                        </Link>
+                    );
+                })}
+            </div>
+        )}
+
+        {/* --- PAGINAÇÃO --- */}
+        {!loading && totalPages > 1 && (
           <div className={styles.pagination}>
-            <button onClick={() => handlePageChange(pagination.currentPage - 1)} disabled={pagination.currentPage === 1}>
+            <button 
+                onClick={() => handlePageChange(currentPage - 1)} 
+                disabled={currentPage === 1}
+            >
               Anterior
             </button>
             <span>
-              Página {pagination.currentPage} de {pagination.totalPages}
+              Página {currentPage} de {totalPages}
             </span>
-            <button onClick={() => handlePageChange(pagination.currentPage + 1)} disabled={pagination.currentPage === pagination.totalPages}>
+            <button 
+                onClick={() => handlePageChange(currentPage + 1)} 
+                disabled={currentPage === totalPages}
+            >
               Próxima
             </button>
           </div>

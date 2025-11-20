@@ -1,26 +1,26 @@
-import { Assistant } from 'next/font/google';
-import { Geist, Geist_Mono } from "next/font/google";
+import { Assistant, Geist, Geist_Mono } from 'next/font/google';
 import "./globals.css";
-import Script from 'next/script'; // 1. Importe o componente Script
+import Script from 'next/script';
+import ClientLayout from '../components/ClientLayout/ClientLayout'; // Importe o componente criado
 
-// Componentes do Layout
-import Header from "../components/Header/Header";
-import Footer from "../components/Footer/Footer";
-import CartPanel from '../components/CartPanel/CartPanel';
-
-// Contextos
-import { CartProvider } from '../context/CartContext';
-import { AuthProvider } from '../context/AuthContext'; // 1. Importe o AuthProvider
-
-// ... (configuração de fontes permanece a mesma)
+// Configuração de Fontes
 const assistant = Assistant({
   subsets: ['latin'],
   weight: ['400', '700'],
   variable: '--font-assistant',
 });
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+// Metadados (SEO) - Funciona apenas em Server Components
 export const metadata = {
   title: "Buddy Boost | Suplementos para Cães",
   description: "A melhor nutrição para a saúde e bem-estar do seu cão.",
@@ -30,19 +30,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="pt-br" className={`${assistant.variable} ${geistSans.variable} ${geistMono.variable}`}>
       <body>
-        {/* 2. Envolva a aplicação com o AuthProvider */}
-        <AuthProvider>
-          <CartProvider>
-            <Header />
-            <CartPanel />
-            <main>
-              {children}
-            </main>
-            <Footer />
-          </CartProvider>
-        </AuthProvider>
-                <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
+        {/* Envolvemos tudo com o ClientLayout que lida com a lógica visual */}
+        <ClientLayout>
+          <main>{children}</main>
+        </ClientLayout>
 
+        {/* Scripts Globais */}
+        <Script src="https://sdk.mercadopago.com/js/v2" strategy="beforeInteractive" />
       </body>
     </html>
   );

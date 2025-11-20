@@ -1,11 +1,11 @@
-// /components/CategoryManager/CategoryManager.js
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { FiPlus, FiEdit, FiTrash2 } from 'react-icons/fi';
 import ApiService from '../../services/api.service';
-import styles from './CategoryManager.module.css'; // Criaremos este CSS a seguir
-import CategoryFormModal from '../CategoryFormModal/CategoryFormModal'; // E este modal também
+import styles from './CategoryManager.module.css';
+import CategoryFormModal from '../CategoryFormModal/CategoryFormModal';
 
 const CategoryManager = () => {
   const [categories, setCategories] = useState([]);
@@ -40,15 +40,25 @@ const CategoryManager = () => {
     setEditingCategory(null);
   };
 
-  const handleSaveCategory = async (categoryData) => {
+  // AQUI ESTÁ A MUDANÇA PRINCIPAL
+  const handleSaveCategory = async (formData) => {
     try {
+      const config = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      };
+
       if (editingCategory) {
-        await ApiService.put(`/categorias/${editingCategory.id}`, categoryData);
+        // PUT para atualizar
+        await ApiService.put(`/categorias/${editingCategory.id}`, formData, config);
       } else {
-        await ApiService.post('/categorias', categoryData);
+        // POST para criar
+        await ApiService.post('/categorias', formData, config);
       }
+      
       handleCloseModal();
-      await fetchCategories();
+      await fetchCategories(); // Recarrega a lista
     } catch (error) {
       console.error("Erro ao salvar categoria:", error.response?.data || error);
       alert(`Erro ao salvar categoria: ${error.response?.data?.erro || 'Verifique o console.'}`);
@@ -56,7 +66,7 @@ const CategoryManager = () => {
   };
 
   const handleDeleteCategory = async (categoryId, categoryName) => {
-    if (window.confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"? Isso pode afetar produtos associados.`)) {
+    if (window.confirm(`Tem certeza que deseja excluir a categoria "${categoryName}"?`)) {
       try {
         await ApiService.delete(`/categorias/${categoryId}`);
         await fetchCategories();
@@ -83,7 +93,7 @@ const CategoryManager = () => {
           <table className={styles.categoryTable}>
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Imagem</th>
                 <th>Nome</th>
                 <th>Descrição</th>
                 <th>Ações</th>
@@ -92,9 +102,18 @@ const CategoryManager = () => {
             <tbody>
               {categories.map((cat) => (
                 <tr key={cat.id}>
-                  <td>{cat.id}</td>
+                  <td>
+                    <div style={{width: 50, height: 50, position: 'relative', borderRadius: 6, overflow: 'hidden', border: '1px solid #eee'}}>
+                        <Image 
+                            src={cat.imagemUrl || '/placeholder-produto.png'} 
+                            alt={cat.nome}
+                            fill
+                            style={{objectFit: 'cover'}}
+                        />
+                    </div>
+                  </td>
                   <td><strong>{cat.nome}</strong></td>
-                  <td>{cat.descricao}</td>
+                  <td style={{maxWidth: '300px', color: '#666'}}>{cat.descricao}</td>
                   <td className={styles.actionsCell}>
                     <button onClick={() => handleOpenModal(cat)} className={styles.actionButton}>
                       <FiEdit /> Editar
