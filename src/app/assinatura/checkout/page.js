@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { FiCreditCard, FiCalendar, FiLock, FiCheck, FiRefreshCw, FiTruck } from 'react-icons/fi';
@@ -8,20 +8,22 @@ import ApiService from '../../../services/api.service';
 import { useAuth } from '../../../context/AuthContext';
 import styles from './subscriptionCheckout.module.css';
 
-export default function SubscriptionCheckoutPage() {
+// 1. Componente interno que contém toda a lógica
+function SubscriptionContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   
-  // Ref para guardar a instância do controlador do Brick
+  // Refs para controle do ciclo de vida do Mercado Pago
   const brickControllerRef = useRef(null);
+  const initializationRef = useRef(false);
 
-  // --- 1. Captura Parâmetros da URL ---
+  // Captura Parâmetros da URL
   const produtoId = searchParams.get('produtoId');
   const qtdParam = searchParams.get('quantidade') || 1;
   const freqParam = searchParams.get('frequencia') || 30;
 
-  // --- 2. Estados ---
+  // Estados
   const [product, setProduct] = useState(null);
   const [loadingProduct, setLoadingProduct] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -44,7 +46,7 @@ export default function SubscriptionCheckoutPage() {
     state: ''
   });
 
-  // --- 3. Verificação de Autenticação e Carregamento do Produto ---
+  // Verificação de Autenticação e Carregamento do Produto
   useEffect(() => {
     if (!authLoading && !user) {
       const returnUrl = `/assinatura/checkout?produtoId=${produtoId}&quantidade=${quantity}&frequencia=${frequency}`;
@@ -73,32 +75,26 @@ export default function SubscriptionCheckoutPage() {
     }
   }, [produtoId, user, authLoading, router, quantity, frequency]);
 
-  // --- 4. Inicialização do Mercado Pago Brick (Lógica Robusta) ---
+  // Inicialização do Mercado Pago Brick
   useEffect(() => {
-    // Condições de saída
     if (!product || !user || typeof window === 'undefined' || !window.MercadoPago) {
       return;
     }
 
+    if (initializationRef.current) {
+      return; 
+    }
+    
+    initializationRef.current = true;
+
+    const mp = new window.MercadoPago("APP_USR-f643797d-d212-4b29-be56-471031739e1c");
+    const bricksBuilder = mp.bricks();
+    const totalAmount = parseFloat(product.preco) * quantity;
+
     const renderBrick = async () => {
       try {
-        // 1. Limpeza Profunda: Remove qualquer instância anterior e limpa o HTML
-        if (brickControllerRef.current) {
-            try {
-                await brickControllerRef.current.unmount();
-            } catch (e) { console.warn("Erro ao desmontar brick anterior:", e); }
-            brickControllerRef.current = null;
-        }
-        
         const container = document.getElementById('cardPaymentBrick_container');
-        if (container) {
-            container.innerHTML = ''; // Remove "fantasmas" HTML
-        }
-
-        // 2. Configuração
-        const mp = new window.MercadoPago("APP_USR-f643797d-d212-4b29-be56-471031739e1c"); // Sua Public Key
-        const bricksBuilder = mp.bricks();
-        const totalAmount = parseFloat(product.preco) * quantity;
+        if (container) container.innerHTML = ''; 
 
         const settings = {
           initialization: {
@@ -124,10 +120,9 @@ export default function SubscriptionCheckoutPage() {
           },
           callbacks: {
             onReady: () => {
-              console.log("Brick de assinatura pronto.");
+              console.log("Payment Brick pronto.");
             },
             onSubmit: async (cardFormData) => {
-               // Validação de endereço
                if (!address.cep || !address.address || !address.number) {
                  setError("Por favor, preencha o endereço de entrega completo.");
                  return Promise.reject("Endereço incompleto");
@@ -172,31 +167,25 @@ export default function SubscriptionCheckoutPage() {
           },
         };
         
-        // 3. Criação do Brick
-        const controller = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', settings);
-        brickControllerRef.current = controller;
+        brickControllerRef.current = await bricksBuilder.create('cardPayment', 'cardPaymentBrick_container', settings);
       
       } catch (e) {
-        console.error("Erro fatal ao iniciar Brick:", e);
+        console.error("Erro ao iniciar Brick:", e);
+        initializationRef.current = false;
       }
     };
 
-    // Pequeno timeout para garantir que o DOM está pronto e limpo
-    const timer = setTimeout(() => {
-        renderBrick();
-    }, 100);
+    renderBrick();
 
-    // Cleanup: roda quando o componente desmonta ou quando user/product mudam
     return () => {
-        clearTimeout(timer);
         if (brickControllerRef.current) {
-            brickControllerRef.current.unmount().catch(() => {});
+            brickControllerRef.current.unmount();
             brickControllerRef.current = null;
         }
+        initializationRef.current = false;
     };
-  }, [product, quantity, user]); // Removemos 'frequency' das dependências para não recarregar o brick ao mudar o select
+  }, [product, quantity, user]);
 
-  // --- 5. Busca de CEP ---
   const handleCepBlur = async (e) => {
       const cep = e.target.value.replace(/\D/g, '');
       if(cep.length === 8) {
@@ -219,8 +208,6 @@ export default function SubscriptionCheckoutPage() {
           }
       }
   };
-
-  // --- 6. Renderização ---
 
   if (authLoading || loadingProduct) {
       return (
@@ -254,10 +241,7 @@ export default function SubscriptionCheckoutPage() {
         </div>
 
         <div className={styles.grid}>
-            {/* --- COLUNA ESQUERDA: DADOS --- */}
             <div className={styles.leftColumn}>
-                
-                {/* CARD 1: ENDEREÇO */}
                 <div className={styles.card}>
                     <div className={styles.cardHeader}>
                         <span className={styles.stepNumber}>1</span>
@@ -335,7 +319,6 @@ export default function SubscriptionCheckoutPage() {
                     </form>
                 </div>
 
-                {/* CARD 2: PAGAMENTO */}
                 <div className={styles.card}>
                      <div className={styles.cardHeader}>
                         <span className={styles.stepNumber}>2</span>
@@ -346,7 +329,6 @@ export default function SubscriptionCheckoutPage() {
                         Apenas Cartão de Crédito é aceito para assinaturas.
                     </p>
 
-                    {/* Container do Brick do Mercado Pago */}
                     <div className={styles.paymentContainer}>
                         <div id="cardPaymentBrick_container"></div>
                     </div>
@@ -359,14 +341,13 @@ export default function SubscriptionCheckoutPage() {
 
                     {processing && (
                         <div className={styles.processingMessage}>
-                            <div className={styles.spinnerSmall}></div> Processando assinatura...
+                            <div className={styles.spinnerSmall}></div> Processando assinatura, por favor aguarde...
                         </div>
                     )}
                 </div>
 
             </div>
 
-            {/* --- COLUNA DIREITA: RESUMO --- */}
             <div className={styles.rightColumn}>
                 <div className={styles.summaryCard}>
                     <h3>Resumo da Assinatura</h3>
@@ -432,5 +413,19 @@ export default function SubscriptionCheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// 2. Exportação Padrão com Suspense
+export default function SubscriptionCheckoutPage() {
+  return (
+    <Suspense fallback={
+        <div className={styles.loadingContainer}>
+            <div className={styles.spinner}></div>
+            <p>Carregando checkout...</p>
+        </div>
+    }>
+      <SubscriptionContent />
+    </Suspense>
   );
 }
