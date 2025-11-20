@@ -1,17 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { 
   FiUser, FiPackage, FiRefreshCw, FiLogOut, FiSettings, 
-  FiCalendar, FiBox, FiCreditCard, FiChevronLeft, FiMapPin 
+  FiCalendar, FiBox, FiCreditCard, FiChevronLeft, FiMapPin, FiTrash2 
 } from 'react-icons/fi';
 import ApiService from '../../../services/api.service';
 import { useAuth } from '../../../context/AuthContext';
 import styles from './profile.module.css';
 
-export default function UserProfilePage() {
+// --- Componente Interno com a Lógica ---
+function UserProfileContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, logout, loading: authLoading } = useAuth();
@@ -26,6 +27,7 @@ export default function UserProfilePage() {
   // Estados de Dados
   const [orders, setOrders] = useState([]);
   const [subscriptions, setSubscriptions] = useState([]);
+  const [addresses, setAddresses] = useState([]); // Mantido caso precise no futuro, mas sem aba
   const [userData, setUserData] = useState({ nome: '', email: '', senhaAtual: '', novaSenha: '' });
   
   // Estados de UI
@@ -110,7 +112,6 @@ export default function UserProfilePage() {
   const handleCancelSubscription = async (subId) => {
     if(!confirm("Tem certeza que deseja cancelar sua assinatura? As cobranças futuras serão interrompidas.")) return;
     try {
-        // Ajuste a rota conforme seu backend. Pode ser POST ou PUT dependendo da implementação.
         await ApiService.post('/assinaturas/cancelar', { assinaturaId: subId }); 
         alert("Assinatura cancelada.");
         
@@ -370,7 +371,7 @@ export default function UserProfilePage() {
             <div className={styles.detailsBox}>
                 <h4>Informações de Cobrança</h4>
                 <p><strong>Próxima Cobrança:</strong> {new Date(sub.dataProximoCobranca).toLocaleDateString('pt-BR')}</p>
-                <p><strong>Frequência:</strong> A cada cobrança automática (Mensal/Trimestral)</p>
+                <p><strong>Frequência:</strong> A cada cobrança automática</p>
                 <p><strong>Método:</strong> Cartão de Crédito (via Mercado Pago)</p>
             </div>
             <div className={styles.detailsBox}>
@@ -495,7 +496,7 @@ export default function UserProfilePage() {
                >
                    <FiRefreshCw /> Assinaturas
                </button>
-               {/* Aba de Endereços removida conforme solicitado */}
+               
                <button 
                    onClick={() => setActiveTab('dados')} 
                    className={`${styles.navButton} ${activeTab === 'dados' ? styles.activeNav : ''}`}
@@ -518,5 +519,14 @@ export default function UserProfilePage() {
         </main>
       </div>
     </div>
+  );
+}
+
+// 2. Exportação Padrão com Suspense
+export default function UserProfilePage() {
+  return (
+    <Suspense fallback={<div className={styles.loading}>Carregando perfil...</div>}>
+      <UserProfileContent />
+    </Suspense>
   );
 }
